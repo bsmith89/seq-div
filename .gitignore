@@ -1,0 +1,25 @@
+# Always ignore
+.DS_Store
+*.swp
+.ipynb_checkpoints/
+*.pyc
+*.html
+*.pdf
+tags
+.initialized
+local.mk
+
+# Ignore these directories
+res/*
+seq/*
+raw/*
+meta/*
+tre/*
+img/*
+profile_default/*
+venv/
+
+# But white-list these files
+!*/README.md
+!*/NOTES.md
+!profile_default/*config.py
