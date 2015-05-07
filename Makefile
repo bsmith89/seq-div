@@ -106,7 +106,7 @@ CLEANUP = ${ALL_DOCS_HTML}
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
-# DATA_DIRS += seq/ tre/ img/
+DATA_DIRS += seq/ tre/
 
 # Add sub-targets (prerequisites) to the major phony targets.
 .PHONY: docs figs res
@@ -124,6 +124,90 @@ all: docs figs res
 # User defined recipes for cleaning up and initially parsing data.
 # e.g. Slicing out columns, combining data sources, alignment, generating
 # phylogenies, etc.
+
+download-seqs:
+	cd raw ; \
+	curl -u $$SEQCORE_USER:$$SEQCORE_PSWD -O "http://seqcore.brcf.med.umich.edu/users/schmidt/smith/[2476527-2476582].M13REV.ab1"
+	rm -f raw/2476550.M13REV.seq raw/2476529.M13REV.seq
+# These two don't exist on the server.
+# How do I remove them automatically?
+
+download-traces:
+	cd raw/traces ; \
+	curl -u $$SEQCORE_USER:$$SEQCORE_PSWD -O "http://seqcore.brcf.med.umich.edu/users/schmidt/smith/[2476527-2476582].M13REV.ab1"
+	rm -f raw/2476550.M13REV.ab1 raw/2476529.M13REV.ab1
+
+seq/clones.raw-names.with-suspect.fn:
+	echo "" > $@
+	for seq_file in raw/*.seq; do \
+		base=$$(basename $$seq_file) ; \
+		echo ">$${base/.seq/}" >> $@ ; \
+		cat $$seq_file >> $@ ; \
+	done
+	sed -i '1,1d' $@
+
+seq/clones.with-suspect.fn: bin/utils/rename_seqs.py etc/clones.names.tsv seq/clones.raw-names.with-suspect.fn
+	$^ > $@
+
+seq/clones.fn: bin/utils/drop_seqs.py etc/clones.suspect.list seq/clones.with-suspect.fn
+	$^ > $@
+
+seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn
+	$^ > $@
+
+seq/clones.with-refs.fn: seq/clones.fn seq/refs.fn
+	cat $^ > $@
+
+res/%.primersearch-luton.out: seq/%.fn etc/luton_primers.txt
+	primersearch \
+		-seqall seq/$*.fn \
+		-infile etc/luton_primers.txt \
+		-mismatchpercent 40 \
+		-outfile $@
+# I use 40% mismatchpercent so that I can include many hits before
+# narrowing by other criteria.
+
+res/%.primersearch-luton.tsv: res/%.primersearch-luton.out bin/mung_primersearch.py
+	bin/mung_primersearch.py < $< > $@
+
+seq/%.qc.fn: bin/clean_clones.py res/%.primersearch-luton.tsv seq/%.fn
+	$^ GGTGG >$@
+# This step is certainly not universal, and causes me to lose two of my
+# references.
+# I think that I lose too many sequences on this step.  Will a Quality Score
+# based cleanup be better?
+
+# Translation:
+seq/%.fa: bin/utils/translate.py seq/%.fn
+	cat seq/$*.fn \
+		| bin/utils/translate.py \
+		> $@
+
+# Alignment
+seq/%.afa: seq/%.fa
+	cat $^ \
+		| muscle \
+		> $@
+
+# Reordering:  *`muscle` puts sequences out of order
+seq/%.ord.afa: bin/utils/ls_ids.py bin/utils/fetch_seqs.py seq/%.afa seq/%.fn
+	$(eval $*_TMP := $(shell mktemp))
+	bin/utils/ls_ids.py seq/$*.fn > ${$*_TMP}
+	bin/utils/fetch_seqs.py ${$*_TMP} seq/$*.afa > $@
+	rm ${$*_TMP}
+
+
+# Backalign:
+seq/%.afn: bin/utils/backalign.py seq/%.ord.afa seq/%.fn
+	$^ > $@
+
+
+# Trees
+tre/%.nucl.nwk: seq/%.afn
+	fasttree -nt $^ > $@
+
+tre/%.prot.nwk: seq/%.afa
+	fasttree < $^ > $@
 
 
 # =======================

@@ -3,9 +3,9 @@ ipython[notebook]>=3.1
 # Un-comment lines to include these suggested requirements.
 # numpy>=1.8.0
 # scipy>=0.14.0
-# pandas>=0.13.1
+pandas>=0.13.1
 # matplotlib>=1.3.1
 # patsy>=0.3.0
 # statsmodels>=0.6.0
-# biopython>=1.65
+git+https://github.com/bsmith89/biopython.git@ParsePrimerSearchOutput#egg=biopython
 # line_profiler
