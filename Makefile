@@ -74,6 +74,9 @@ export HELP_MSG
 # Don't delete intermediate files.
 .SECONDARY:
 
+# Delete targets if there is an error while executing a rule.
+.DELETE_ON_ERROR:
+
 # The target `all` needs to be the first one defined (besides special
 # targets) in order for it to be made on running `make` without a target.
 .PHONY: all
@@ -125,80 +128,103 @@ all: docs figs res
 # e.g. Slicing out columns, combining data sources, alignment, generating
 # phylogenies, etc.
 
-download-seqs:
-	cd raw ; \
-	curl -u $$SEQCORE_USER:$$SEQCORE_PSWD -O "http://seqcore.brcf.med.umich.edu/users/schmidt/smith/[2476527-2476582].M13REV.ab1"
-	rm -f raw/2476550.M13REV.seq raw/2476529.M13REV.seq
-# These two don't exist on the server.
-# How do I remove them automatically?
+# Download and extract usable data {{{1
+RAW_CLONES_SEQ_NAMES := $(shell cut -f1 etc/clones.names.tsv)
+RAW_CLONES_AB1 = $(patsubst %,raw/%.ab1,${RAW_CLONES_SEQ_NAMES})
+REPOSITORY_URL_BASE = http://seqcore.brcf.med.umich.edu/users/schmidt/smith
+${RAW_CLONES_AB1}:
+	wget --user=$$SEQCORE_USER --password=$$SEQCORE_PSWD -O $@ ${REPOSITORY_URL_BASE}/${@F}
 
-download-traces:
-	cd raw/traces ; \
-	curl -u $$SEQCORE_USER:$$SEQCORE_PSWD -O "http://seqcore.brcf.med.umich.edu/users/schmidt/smith/[2476527-2476582].M13REV.ab1"
-	rm -f raw/2476550.M13REV.ab1 raw/2476529.M13REV.ab1
+# TODO: Should I recommend using %-pattern rules whenever possible?
+# or is it better to start with hard-coded rules and then switch to them
+# later?
+raw/%.fastq: raw/%.ab1 bin/make_fastq.py
+	phred raw/$*.ab1 -qd raw/ -sd raw/ -raw $*
+	bin/make_fastq.py $<.seq $<.qual > $@
+	rm $<.seq $<.qual
 
-seq/clones.raw-names.with-suspect.fn:
-	echo "" > $@
-	for seq_file in raw/*.seq; do \
-		base=$$(basename $$seq_file) ; \
-		echo ">$${base/.seq/}" >> $@ ; \
-		cat $$seq_file >> $@ ; \
-	done
-	sed -i '1,1d' $@
+# Concatenate all of the experimental sequences into a raw fastq file.
+RAW_CLONES_FASTQ = $(patsubst %,raw/%.fastq,${RAW_CLONES_SEQ_NAMES})
+seq/clones.fastq: ${RAW_CLONES_FASTQ}
+	cat $^ > $@
+# }}}
 
-seq/clones.with-suspect.fn: bin/utils/rename_seqs.py etc/clones.names.tsv seq/clones.raw-names.with-suspect.fn
+# Rename and remove known bad sequences {{{1
+# Pre-pre-processing of the sequence files to remove subjectively identified
+# suspect sequences and renaming sequences to a more meaningful scheme.
+seq/%.rename.fastq: bin/utils/rename_seqs.py etc/%.names.tsv seq/%.fastq
+	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
+
+seq/%.no-susp.fastq: bin/utils/drop_seqs.py etc/%.suspect.list seq/%.fastq
+	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
+
+seq/%.rename.no-susp.fastq: bin/utils/drop_seqs.py etc/%.suspect.list seq/%.rename.fastq
+	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
+
+seq/%.fn: bin/fq2fn.py seq/%.fastq
 	$^ > $@
 
-seq/clones.fn: bin/utils/drop_seqs.py etc/clones.suspect.list seq/clones.with-suspect.fn
-	$^ > $@
-
+# Rename reference sequences
 seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn
 	$^ > $@
 
-seq/clones.with-refs.fn: seq/clones.fn seq/refs.fn
+seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
 	cat $^ > $@
 
-res/%.primersearch-luton.out: seq/%.fn etc/luton_primers.txt
-	primersearch \
-		-seqall seq/$*.fn \
-		-infile etc/luton_primers.txt \
-		-mismatchpercent 40 \
-		-outfile $@
+# }}}
+
+# Search for primer hits:
+res/%.psearch.out: seq/%.fn etc/primers.tsv
+	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
 # I use 40% mismatchpercent so that I can include many hits before
 # narrowing by other criteria.
 
-res/%.primersearch-luton.tsv: res/%.primersearch-luton.out bin/mung_primersearch.py
-	bin/mung_primersearch.py < $< > $@
+res/%.psearch.out: seq/%.fastq etc/primers.tsv
+	primersearch -seqall $(word 1,$^) -sformat fastq -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
+# I use 40% mismatchpercent so that I can include many hits before
+# narrowing by other criteria.
 
-seq/%.qc.fn: bin/clean_clones.py res/%.primersearch-luton.tsv seq/%.fn
-	$^ GGTGG >$@
-# This step is certainly not universal, and causes me to lose two of my
-# references.
-# I think that I lose too many sequences on this step.  Will a Quality Score
-# based cleanup be better?
+res/%.psearch.tsv: res/%.psearch.out bin/parse_psearch.py
+	$(word 2,$^) < $< > $@
 
+# Re-orient the sequences to match the forward-reverse in etc/*.primers
+# and trim to within the primers
+seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/clones.psearch.tsv seq/%.fastq
+	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) $(word 3,$^) $(word 4,$^) > $@
+
+seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.fn
+	$^ > $@
+
+seq/%.qtrim.fn: ./bin/qtrim_reads.py seq/%.fastq
+	$^ > $@
+
+seq/%.fn: ./bin/fq2fn.py seq/%.fastq
+	$^ > $@
+
+seq/%.frame.fn: ./bin/infer_frame.py seq/%.fn
+	$^ > $@
+
+# Processing of clean sequences {{{2
 # Translation:
-seq/%.fa: bin/utils/translate.py seq/%.fn
-	cat seq/$*.fn \
-		| bin/utils/translate.py \
-		> $@
+seq/%.fa: bin/utils/translate.py seq/%.frame.fn
+	$^ > $@
 
 # Alignment
 seq/%.afa: seq/%.fa
-	cat $^ \
-		| muscle \
-		> $@
-
-# Reordering:  *`muscle` puts sequences out of order
-seq/%.ord.afa: bin/utils/ls_ids.py bin/utils/fetch_seqs.py seq/%.afa seq/%.fn
-	$(eval $*_TMP := $(shell mktemp))
-	bin/utils/ls_ids.py seq/$*.fn > ${$*_TMP}
-	bin/utils/fetch_seqs.py ${$*_TMP} seq/$*.afa > $@
-	rm ${$*_TMP}
-
+	cat $^ | muscle > $@
 
 # Backalign:
-seq/%.afn: bin/utils/backalign.py seq/%.ord.afa seq/%.fn
+# # Reordering:  *`muscle` puts sequences out of order
+# seq/%.ord.afa: bin/utils/ls_ids.py bin/utils/fetch_seqs.py seq/%.afa seq/%.fn
+# 	$(eval $*_TMP := $(shell mktemp))
+# 	bin/utils/ls_ids.py seq/$*.fn > ${$*_TMP}
+# 	bin/utils/fetch_seqs.py ${$*_TMP} seq/$*.afa > $@
+# 	rm ${$*_TMP}
+#
+# seq/%.afn: bin/utils/backalign.py seq/%.ord.afa seq/%.fn
+# 	$^ > $@
+
+seq/%.afn: bin/utils/backalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 
@@ -209,6 +235,7 @@ tre/%.nucl.nwk: seq/%.afn
 tre/%.prot.nwk: seq/%.afa
 	fasttree < $^ > $@
 
+# }}}
 
 # =======================
 #  Analysis Recipes
@@ -226,6 +253,7 @@ tre/%.prot.nwk: seq/%.afa
 
 
 # =======================
+#
 #  Documentation Recipes {{{1
 # =======================
 ALL_DOCS = TEMPLATE NOTE
@@ -233,13 +261,7 @@ ALL_DOCS_HTML = $(addsuffix .html,${ALL_DOCS})
 MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 %.html: %.md
-	cat $^ \
-	| pandoc -f markdown -t html5 -s\
-				--highlight-style pygments \
-				--mathjax=${MATHJAX} \
-				--toc --toc-depth=4 \
-				--css static/main.css \
-	> $@
+	pandoc -f markdown -t html5 -s --highlight-style pygments --mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
 
 docs: ${ALL_DOCS_HTML}
 

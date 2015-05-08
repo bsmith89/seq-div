@@ -16,6 +16,17 @@ def parse_rec(hit_info):
     primer_stop = words[10]
     return (name, start, stop, mis_start, mis_stop, primer_start, primer_stop)
 
+def psearch2iupac(string):
+    out = []
+    for piece in string.split("]"):
+        if "[" in piece:
+            unambig, ambig = piece.split("[")
+            out.append(unambig)
+            out.append(ambig[-1])
+        else:
+            out.append(piece)
+    return ''.join(out)
+
 def mung_file(handle):
     records = []
     amplifiers = read(handle).amplifiers
@@ -31,6 +42,8 @@ def mung_file(handle):
                     start, mis_start, primer_start = index, mismatches, primer
                 if index < stop:
                     stop, mis_stop, primer_stop = index, mismatches, primer
+            primer_start = psearch2iupac(primer_start)
+            primer_stop = psearch2iupac(primer_stop)
             records.append((name, primer_set,
                             start, stop,
                             mis_start, mis_stop,
