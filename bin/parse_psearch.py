@@ -5,18 +5,7 @@ import sys
 from Bio.Emboss.PrimerSearch import read
 from pandas import DataFrame
 
-def parse_rec(hit_info):
-    words = hit_info.split()
-    name = words[0]
-    start = int(words[6])
-    stop = 0 - int(words[15][1:-1])
-    mis_start = int(words[8])
-    mis_stop = int(words[17])
-    primer_start = words[1]
-    primer_stop = words[10]
-    return (name, start, stop, mis_start, mis_stop, primer_start, primer_stop)
-
-def psearch2iupac(string):
+def psearch_primer_to_iupac(string):
     out = []
     for piece in string.split("]"):
         if "[" in piece:
@@ -27,28 +16,32 @@ def psearch2iupac(string):
             out.append(piece)
     return ''.join(out)
 
+
+def extract_info(amplicon):
+    name = amplicon.seq_id
+    length = amplicon.length
+    start = 0
+    stop = 0
+    for primer in amplicon.binding_sites:
+        index, mismatches = amplicon.binding_sites[primer]
+        if index > start:
+            start, mis_start, primer_start = index, mismatches, primer
+        if index < stop:
+            stop, mis_stop, primer_stop = index, mismatches, primer
+    primer_start = psearch_primer_to_iupac(primer_start)
+    primer_stop = psearch_primer_to_iupac(primer_stop)
+    return (name,
+            start, stop,
+            mis_start, mis_stop,
+            primer_start, primer_stop)
+
 def mung_file(handle):
     records = []
     amplifiers = read(handle).amplifiers
     for primer_set in amplifiers:
         for amplicon in amplifiers[primer_set]:
-            name = amplicon.seq_id
-            length = amplicon.length
-            start = 0
-            stop = 0
-            for primer in amplicon.binding_sites:
-                index, mismatches = amplicon.binding_sites[primer]
-                if index > start:
-                    start, mis_start, primer_start = index, mismatches, primer
-                if index < stop:
-                    stop, mis_stop, primer_stop = index, mismatches, primer
-            primer_start = psearch2iupac(primer_start)
-            primer_stop = psearch2iupac(primer_stop)
-            records.append((name, primer_set,
-                            start, stop,
-                            mis_start, mis_stop,
-                            primer_start, primer_stop))
-    return DataFrame(records, columns=('template', 'primer_set', 'start', 'stop',
+            records.append([primer_set] + list(extract_info(amplicon)))
+    return DataFrame(records, columns=('primer_set', 'template', 'start', 'stop',
                                        'mismatch_start', 'mismatch_stop',
                                        'primer_start', 'primer_stop'))
 

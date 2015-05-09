@@ -97,7 +97,8 @@ DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
 # Use this file to include sensitive data that shouldn't be version controlled.
 -include local.mk
 
-# ====================}}}
+# }}}
+# ====================
 #  User Configuration {{{0
 # ====================
 # Use the following line to add project directories with executibles
@@ -105,7 +106,7 @@ DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
 # export PATH := <BIN-DIR-A>:<BIN-DIR-B>:${PATH}
 
 # Use the following line to add files to be deleted on `make clean`:
-CLEANUP = ${ALL_DOCS_HTML}
+CLEANUP += res/* seq/* tre/*
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -122,19 +123,23 @@ all: docs figs res
 
 # }}}
 # ==============
-#  Data Recipes
+#  Data Recipes {{{0
 # ==============
 # User defined recipes for cleaning up and initially parsing data.
 # e.g. Slicing out columns, combining data sources, alignment, generating
 # phylogenies, etc.
 
-# Download and extract usable data {{{1
+# Get files {{{
+# Download {{{
 RAW_CLONES_SEQ_NAMES := $(shell cut -f1 etc/clones.names.tsv)
 RAW_CLONES_AB1 = $(patsubst %,raw/%.ab1,${RAW_CLONES_SEQ_NAMES})
 REPOSITORY_URL_BASE = http://seqcore.brcf.med.umich.edu/users/schmidt/smith
+
 ${RAW_CLONES_AB1}:
 	wget --user=$$SEQCORE_USER --password=$$SEQCORE_PSWD -O $@ ${REPOSITORY_URL_BASE}/${@F}
 
+# }}}
+# Make clones.fastq {{{
 # TODO: Should I recommend using %-pattern rules whenever possible?
 # or is it better to start with hard-coded rules and then switch to them
 # later?
@@ -143,36 +148,34 @@ raw/%.fastq: raw/%.ab1 bin/make_fastq.py
 	bin/make_fastq.py $<.seq $<.qual > $@
 	rm $<.seq $<.qual
 
-# Concatenate all of the experimental sequences into a raw fastq file.
+# Concatenate all of the experimental sequences into a raw fastq file, rename
+# them, and then remove those which have been a priori deemed "suspicious".
 RAW_CLONES_FASTQ = $(patsubst %,raw/%.fastq,${RAW_CLONES_SEQ_NAMES})
-seq/clones.fastq: ${RAW_CLONES_FASTQ}
-	cat $^ > $@
+seq/clones.fastq: bin/utils/rename_seqs.py etc/clones.names.tsv \
+				  bin/utils/drop_seqs.py etc/clones.suspect.list \
+				  ${RAW_CLONES_FASTQ}
+	cat ${RAW_CLONES_FASTQ} \
+		| $(word 1,$^) -f fastq -t fastq $(word 2,$^) \
+		| $(word 3,$^) $(word 4,$^) -f fastq -t fastq > $@
+
 # }}}
+# Append reference sequences {{{
+# Rename reference sequences and remove those which have been a priori deemed
+# suspicious.
+seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn \
+			 bin/utils/drop_seqs.py etc/refs.suspect.list
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) | $(word 4,$^) $(word 5,$^) > $@
 
-# Rename and remove known bad sequences {{{1
-# Pre-pre-processing of the sequence files to remove subjectively identified
-# suspect sequences and renaming sequences to a more meaningful scheme.
-seq/%.rename.fastq: bin/utils/rename_seqs.py etc/%.names.tsv seq/%.fastq
-	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
-
-seq/%.no-susp.fastq: bin/utils/drop_seqs.py etc/%.suspect.list seq/%.fastq
-	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
-
-seq/%.rename.no-susp.fastq: bin/utils/drop_seqs.py etc/%.suspect.list seq/%.rename.fastq
-	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) < $(word 3,$^) > $@
-
-seq/%.fn: bin/fq2fn.py seq/%.fastq
-	$^ > $@
-
-# Rename reference sequences
-seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn
-	$^ > $@
-
+# Combine clones which have been quality trimmed with the reference sequences.
+# to make the "both" file series.
+# Quality trimming of the references is not required.
 seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
 	cat $^ > $@
 
 # }}}
-
+# }}}
+# Remove uniformative sequence {{{
+# Excise amplicon {{{
 # Search for primer hits:
 res/%.psearch.out: seq/%.fn etc/primers.tsv
 	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
@@ -190,45 +193,53 @@ res/%.psearch.tsv: res/%.psearch.out bin/parse_psearch.py
 # Re-orient the sequences to match the forward-reverse in etc/*.primers
 # and trim to within the primers
 seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/clones.psearch.tsv seq/%.fastq
-	$(word 1,$^) --in-fmt fastq --out-fmt fastq $(word 2,$^) $(word 3,$^) $(word 4,$^) > $@
+	$(word 1,$^) -f fastq -t fastq $(word 2,$^) $(word 3,$^) $(word 4,$^) > $@
 
 seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.fn
 	$^ > $@
 
-seq/%.qtrim.fn: ./bin/qtrim_reads.py seq/%.fastq
-	$^ > $@
+# }}}
+# Quality trim {{{
 
-seq/%.fn: ./bin/fq2fn.py seq/%.fastq
-	$^ > $@
+seq/%.qtrim.fastq: bin/qtrim_reads.py seq/%.fastq
+	$^ -t fastq > $@
 
+# }}}
+# }}}
+# Convert filetypes {{{
+seq/%.fn: bin/utils/convert.py seq/%.fastq
+	$^ -f fastq > $@
+
+# }}}
+# Translate {{{
 seq/%.frame.fn: ./bin/infer_frame.py seq/%.fn
 	$^ > $@
 
-# Processing of clean sequences {{{2
-# Translation:
 seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 	$^ > $@
 
-# Alignment
+# }}}
+# Align {{{
 seq/%.afa: seq/%.fa
 	cat $^ | muscle > $@
-
-# Backalign:
-# # Reordering:  *`muscle` puts sequences out of order
-# seq/%.ord.afa: bin/utils/ls_ids.py bin/utils/fetch_seqs.py seq/%.afa seq/%.fn
-# 	$(eval $*_TMP := $(shell mktemp))
-# 	bin/utils/ls_ids.py seq/$*.fn > ${$*_TMP}
-# 	bin/utils/fetch_seqs.py ${$*_TMP} seq/$*.afa > $@
-# 	rm ${$*_TMP}
-#
-# seq/%.afn: bin/utils/backalign.py seq/%.ord.afa seq/%.fn
-# 	$^ > $@
 
 seq/%.afn: bin/utils/backalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
+# }}}
+# Gblocks {{{
 
-# Trees
+# gblocks always throws an error code of 1
+seq/%.gb.afn: seq/%.afn
+	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
+	mv $^-gb $@
+
+seq/%.gb.afa: seq/%.afa
+	Gblocks $^ -t=p -p=n || [ $$? == 1 ]
+	mv $^-gb $@
+
+# }}}
+# Trees {{{
 tre/%.nucl.nwk: seq/%.afn
 	fasttree -nt $^ > $@
 
@@ -236,7 +247,6 @@ tre/%.prot.nwk: seq/%.afa
 	fasttree < $^ > $@
 
 # }}}
-
 # =======================
 #  Analysis Recipes
 # =======================
@@ -253,7 +263,6 @@ tre/%.prot.nwk: seq/%.afa
 
 
 # =======================
-#
 #  Documentation Recipes {{{1
 # =======================
 ALL_DOCS = TEMPLATE NOTE

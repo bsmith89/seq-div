@@ -9,7 +9,7 @@ from Bio.SeqIO import parse, write
 import sys
 from pandas import read_table, Series
 from warnings import warn
-from utils import cli
+from utils.lib import cli
 import argparse
 import logging
 
