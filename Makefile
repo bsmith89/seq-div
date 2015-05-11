@@ -88,25 +88,43 @@ ${HELP_TRGTS}:
 	@echo "$$HELP_MSG" "$$(${MAKE} -h)" | less
 
 # All recipes are run as though they are within the virtualenv.
+# WARNING: This may cause difficult to debug problems.
 VENV = ./venv
 export VIRTUAL_ENV = $(abspath ${VENV})
 export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 
+# TODO: Include a tmp/ dir?  Use it for what?
 DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
 
 # Use this file to include sensitive data that shouldn't be version controlled.
+# Others forking this project will need to create their own local.mk.
 -include local.mk
+# Warn the user if local.mk doesn't exist.
+# TODO: Does this do what I want?
+local.mk:
+	@echo "No local make file."
 
 # }}}
 # ====================
-#  User Configuration {{{0
+#  User Configuration {{{1
 # ====================
-# Use the following line to add project directories with executibles
-# to the `make` recipe path:
-# export PATH := <BIN-DIR-A>:<BIN-DIR-B>:${PATH}
 
-# Use the following line to add files to be deleted on `make clean`:
-CLEANUP += res/* seq/* tre/*
+# Name, and directory, of the python virtual environment:
+VENV = ./venv
+# All recipes are run as though they are within the virtualenv.
+# WARNING: This may cause difficult to debug problems.
+# To deactivate, thereby running all recipes from the global python
+# environment, comment out the following line:
+export VIRTUAL_ENV = $(abspath ${VENV})
+
+# Use the following line to add to the PATH of all recipes.
+# WARNING: These executibles will not necessarily be available in the same
+# way from the command line, so you may get difficult to debug problems.
+export PATH := ${VIRTUAL_ENV}/bin:${PATH}
+# TODO: Deal with virtualenvs in a more transparent way.
+
+# Use the following line to add files and directories to be deleted on `make clean`:
+CLEANUP += res/* seq/* tre/* raw/traces ${ALL_TRACE_DIRS}
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -116,7 +134,7 @@ DATA_DIRS += seq/ tre/
 .PHONY: docs figs res
 docs:
 figs:
-res:
+res: tre/both2.ampli.qtrim.gb.nucl.nwk tre/both2.ampli.qtrim.gb.prot.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
@@ -133,18 +151,31 @@ all: docs figs res
 # Download {{{
 RAW_CLONES_SEQ_NAMES := $(shell cut -f1 etc/clones.names.tsv)
 RAW_CLONES_AB1 = $(patsubst %,raw/%.ab1,${RAW_CLONES_SEQ_NAMES})
-REPOSITORY_URL_BASE = http://seqcore.brcf.med.umich.edu/users/schmidt/smith
 
-${RAW_CLONES_AB1}:
-	wget --user=$$SEQCORE_USER --password=$$SEQCORE_PSWD -O $@ ${REPOSITORY_URL_BASE}/${@F}
+# All data files should be stored as a tarball in my Public/Data dropbox
+# dir.
+raw/%.tgz:
+	wget --directory-prefix=${@D} https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
+
+raw/%/: raw/%.tgz
+	tar -C raw/ -xzf $^
+
+# Move traces from the extracted directories to raw/traces/
+ALL_TRACE_DIRS = raw/2015-04-29_mcrA_clones/
+get-traces: ${ALL_TRACE_DIRS}
+	@mkdir -p raw/traces
+	for directory in $^; do \
+		cp $$directory/*.ab1 raw/traces ; \
+	done
 
 # }}}
 # Make clones.fastq {{{
 # TODO: Should I recommend using %-pattern rules whenever possible?
 # or is it better to start with hard-coded rules and then switch to them
 # later?
-raw/%.fastq: raw/%.ab1 bin/make_fastq.py
-	phred raw/$*.ab1 -qd raw/ -sd raw/ -raw $*
+
+raw/%.fastq: raw/traces/%.ab1 bin/make_fastq.py
+	phred $< -qd ${<D} -sd ${<D} -raw $*
 	bin/make_fastq.py $<.seq $<.qual > $@
 	rm $<.seq $<.qual
 
@@ -154,9 +185,7 @@ RAW_CLONES_FASTQ = $(patsubst %,raw/%.fastq,${RAW_CLONES_SEQ_NAMES})
 seq/clones.fastq: bin/utils/rename_seqs.py etc/clones.names.tsv \
 				  bin/utils/drop_seqs.py etc/clones.suspect.list \
 				  ${RAW_CLONES_FASTQ}
-	cat ${RAW_CLONES_FASTQ} \
-		| $(word 1,$^) -f fastq -t fastq $(word 2,$^) \
-		| $(word 3,$^) $(word 4,$^) -f fastq -t fastq > $@
+	cat ${RAW_CLONES_FASTQ} | $(word 1,$^) -f fastq -t fastq $(word 2,$^) | $(word 3,$^) $(word 4,$^) -f fastq -t fastq > $@
 
 # }}}
 # Append reference sequences {{{
@@ -166,11 +195,20 @@ seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn \
 			 bin/utils/drop_seqs.py etc/refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) | $(word 4,$^) $(word 5,$^) > $@
 
+seq/refs2.fn: bin/utils/fetch_seqs.py etc/refs.types.list raw/mcra.refs.fn \
+			  bin/utils/rename_seqs.py etc/refs.names.tsv \
+			  bin/utils/drop_seqs.py etc/refs.suspect.list
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) | $(word 4,$^) $(word 5,$^) | $(word 6,$^) $(word 7,$^) > $@
+
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
 seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
 	cat $^ > $@
+
+seq/both2.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs2.ampli.fn
+	cat $^ > $@
+
 
 # }}}
 # }}}
@@ -279,7 +317,7 @@ docs: ${ALL_DOCS_HTML}
 # =================
 .PHONY: clean
 clean:
-	rm -f ${CLEANUP}
+	rm -rf ${CLEANUP}
 
 # ========================
 #  Initialization Recipes {{{1
@@ -288,7 +326,7 @@ clean:
 init: .git/.initialized
 .git/.initialized:
 	@${MAKE} submodules
-	@${MAKE} ${VENV}
+	@[ "${VENV}" ] && ${MAKE} ${VENV}
 	@${MAKE} python-reqs
 	@${MAKE} data-dirs
 	@${MAKE} .link-readme
