@@ -1,4 +1,5 @@
 # Preface {{{1
+# User help message {{{2
 define HELP_MSG
 
 ================================
@@ -66,7 +67,7 @@ export HELP_MSG
 
 
 # ========================
-#  Standard Configuration
+#  Standard Configuration {{{2
 # ========================
 # One failing step in a recipe causes the whole recipe to fail.
 .POSIX:
@@ -102,7 +103,6 @@ DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
 # absence, remove the preceeding '-'.
 include local.mk
 
-# }}}
 # ====================
 #  User Configuration {{{1
 # ====================
@@ -137,20 +137,16 @@ res: tre/both2.ampli.qtrim.gb.nucl.nwk tre/both2.ampli.qtrim.gb.prot.nwk
 # What files are generated on `make all`?
 all: docs figs res
 
-# }}}
 # ==============
-#  Data Recipes {{{-1
+#  Data {{{1
 # ==============
 # User defined recipes for cleaning up and initially parsing data.
 # e.g. Slicing out columns, combining data sources, alignment, generating
 # phylogenies, etc.
 
-# TODO: Script the writing of this file.
-include data.mk
-
-# Remote data {{{
+# Archives {{{2
+# Dropbox downloads {{{3
 DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz
-# Dropbox {{{
 define GET_FROM_DROPBOX
 wget --no-clobber --directory-prefix=${@D} https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
 endef
@@ -159,23 +155,18 @@ endef
 $(addprefix raw/,${DROPBOX_REPOS}):
 	${GET_FROM_DROPBOX}
 
-# }}}
-# Unpacking and copying {{{
-# Unpack 2015-04-29_mcrA-clones.tgz
-# Repeated target in order to invoke multi-target pattern rule qualities
-raw/2015-04-29_mcrA-clones/%.ab1 raw/2015-04-29_mcrA-clones/%.ab1: raw/2015-04-29_mcrA-clones.tgz
-	tar -C raw/ -xzf $^
-	touch ${@D}/*
+# Unpacking and copying {{{3
 
-# Copy ab1 files from the unpacked TGZs to the raw/ directory
-# Mapping from the target *.ab1 file to the source is
-# set in data.mk
-raw/%.ab1:
-	cp $^ $@
+# Automatically generate archive.mk: rules for unpacking archived data files.
+raw/unarchive.mk: etc/archive-contents.tsv
+	@echo Generating $@...
+	@cat $^ | awk '{printf("raw/%s: raw/%s/%s\n\tcp $$^ $$@\n", $$1, $$2, $$1)}' > $@
+	@for archive in $$(cut -f2 $^ | sort | uniq); do \
+		printf 'raw/%s/%%.ab1 raw/%s/%%.ab1: raw/%s.tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $${@D}/*\n' $$archive $$archive $$archive >> $@ ; \
+	done
+include ./raw/unarchive.mk
 
-# }}}
-# }}}
-# Make FASTQs {{{
+# Contruct FASTQs {{{2
 # TODO: Should I recommend using %-pattern rules whenever possible?
 # or is it better to start with hard-coded rules and then switch to them
 # later?
@@ -189,9 +180,18 @@ raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/%.ab1 | raw/qual raw/seq
 raw/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
-# Pre-requisites set in data.mk
+include raw/all-clones.mk
+# All pre-requisites for raw/clones.all.fastq
+raw/all-clones.mk: etc/clones.names.tsv
+	@echo Generating $@...
+	@echo > $@
+	@for clone in $$(cut -f1 $^); do \
+		printf 'raw/clones.all.fastq: raw/%s.fastq\n' $$clone >> $@; \
+	done
+
 raw/clones.all.fastq:
 	cat $^ > $@
+
 
 seq/clones.fastq: raw/clones.all.fastq \
 				  bin/utils/rename_seqs.py etc/clones.names.tsv \
@@ -201,8 +201,7 @@ seq/clones.fastq: raw/clones.all.fastq \
 		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) -f fastq -t fastq > $@
 
-# }}}
-# Reference sequences {{{
+# Reference sequences {{{2
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
 
@@ -232,9 +231,8 @@ seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
 seq/both2.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs2.ampli.fn
 	cat $^ > $@
 
-# }}}
-# Remove uniformative sequence {{{
-# Excise amplicon {{{
+# Remove uniformative sequence {{{2
+# Excise amplicon {{{3
 # Search for primer hits:
 res/%.psearch.out: seq/%.fn etc/primers.tsv
 	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
@@ -257,36 +255,30 @@ seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/clones.psearch.tsv
 seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.fn
 	$^ > $@
 
-# }}}
-# Quality trim {{{
+# Quality trim {{{3
 
 seq/%.qtrim.fastq: bin/qtrim_reads.py seq/%.fastq
 	$^ -t fastq > $@
 
-# }}}
-# }}}
-# Convert filetypes {{{
+# Convert filetypes {{{2
 seq/%.fn: bin/utils/convert.py seq/%.fastq
 	$^ -f fastq > $@
 
-# }}}
-# Translate {{{
+# Translate {{{2
 seq/%.frame.fn: ./bin/infer_frame.py seq/%.fn
 	$^ > $@
 
 seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 	$^ > $@
 
-# }}}
-# Align {{{
+# Align {{{2
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
 
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
-# }}}
-# Gblocks {{{
+# Gblocks {{{2
 seq/%.gb.afn: seq/%.afn
 	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
 	mv $^-gb $@
@@ -296,33 +288,29 @@ seq/%.gb.afa: seq/%.afa
 	Gblocks $^ -t=p -p=n || [ $$? == 1 ]
 	mv $^-gb $@
 
-# }}}
 # =======================
-#  Analysis Recipes {{{0
+#  Analysis {{{1
 # =======================
 # User defined recipes for analyzing the data.
 # e.g. Calculating means, distributions, correlations, fitting models, etc.
 # Basically anything that *could* go into the paper as a table.
 
-# Trees {{{
+# Trees {{{2
 tre/%.nucl.nwk: seq/%.afn
 	fasttree -nt $^ > $@
 
 tre/%.prot.nwk: seq/%.afa
 	fasttree < $^ > $@
 
-# }}}
-# }}}
-
 # ==================
-#  Graphing Recipes
+#  Graphing {{{1
 # ==================
 # User defined recipes for plotting figures.  These should use
 # the targets of analysis recipes above as their prerequisites.
 
 
 # =======================
-#  Documentation Recipes {{{1
+#  Documentation {{{1
 # =======================
 ALL_DOCS = TEMPLATE NOTE
 ALL_DOCS_HTML = $(addsuffix .html,${ALL_DOCS})
@@ -334,7 +322,7 @@ MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_
 docs: ${ALL_DOCS_HTML}
 
 # =================
-#  Cleanup Recipes {{{1
+#  Cleanup {{{1
 # =================
 .PHONY: clean
 clean:

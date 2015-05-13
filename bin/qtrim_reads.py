@@ -9,24 +9,26 @@ from statistics import mean
 from utils.lib import cli
 import argparse
 import logging
+from warnings import warn
 
 DEFAULT_QUAL_THRESH = 40
+DEFAULT_MIN_LEN = 9
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
-def quality_trim(rec, end, avg):
+def quality_trim(rec, thr):
     start = 0
     stop = len(rec)
     quality = rec.letter_annotations['phred_quality']
-    while (quality[stop - 1] < end) and (stop > 0):
+    while (quality[stop - 1] < thr) and (stop > 0):
         stop -= 1
-    while (quality[start] < end) and (stop - start > 0):
+    while (quality[start] < thr) and (stop - start > 0):
         start += 1
-    while (stop - start > 0) and (mean(quality[start:stop]) < avg):
+    while (stop - start > 0) and (mean(quality[start:stop]) < thr):
         if quality[stop - 1] < quality[start]:
             stop -= 1
-        else:  # In the case of a tie, the 5' end is truncated.
+        else:  # In the case of a tie, the 5' thr is truncated.
             start += 1
     return rec[start:stop]
 
@@ -35,8 +37,11 @@ def _get_quality_args_parser():
     g = p.add_argument_group(*cli.PAR_GROUP)
     g.add_argument('--quality-threshold', '-q', type=int,
                    default=DEFAULT_QUAL_THRESH,
-                   help=("mean PHRED-quality threshold "
+                   help=("PHRED-quality threshold "
                          "DEFAULT: {}").format(DEFAULT_QUAL_THRESH))
+    g.add_argument('--min-length', '-l', type=int,
+                   default=DEFAULT_MIN_LEN,
+                   help=("minimum length sequence to output"))
     return p
 
 def _get_fastq_in_parser():
@@ -64,11 +69,16 @@ def main():
     logging.basicConfig(level=args.log_level)
     logger.debug(args)
 
-    for rec in parse(args.in_handle, 'fastq'):
-        write(quality_trim(rec,
-                           args.quality_threshold,
-                           args.quality_threshold),
-              args.out_handle, args.fmt_outfile)
+    for rec_in in parse(args.in_handle, 'fastq'):
+        rec_out = quality_trim(rec_in, args.quality_threshold)
+        length = len(rec_out.seq)
+        if length < args.min_length:
+            warn(("Length of sequence {} less than threshold. "
+                  "{} < {}. Dropping.").\
+                     format(rec_out.id, length, args.min_length),
+                 cli.DropSequenceWarning)
+        else:
+            write(rec_out, args.out_handle, args.fmt_outfile)
 
 if __name__ == '__main__':
     main()

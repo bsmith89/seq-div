@@ -104,8 +104,8 @@ def main():
         hit_primer_stop = hit_info['primer_stop'].upper()
         hit_start = hit_info['start']
         hit_stop = hit_info['stop']
-        trim_start = hit_start + len(fwd_primer)
-        trim_stop = hit_stop - len(rev_primer)
+        trim_start = hit_start + len(hit_primer_start)
+        trim_stop = hit_stop - len(hit_primer_stop)
         if hit_primer_start != fwd_primer:
             assert hit_primer_stop == fwd_primer
             out_rec = rec[trim_start:trim_stop].reverse_complement()
