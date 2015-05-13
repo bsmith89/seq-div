@@ -14,6 +14,7 @@ import argparse
 import logging
 
 logger = logging.getLogger(__name__)
+logging.captureWarnings(True)
 
 def parse_primer_sets(handle):
     pairs = {}

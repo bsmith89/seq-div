@@ -13,6 +13,7 @@ import logging
 DEFAULT_QUAL_THRESH = 40
 
 logger = logging.getLogger(__name__)
+logging.captureWarnings(True)
 
 def quality_trim(rec, end, avg):
     start = 0

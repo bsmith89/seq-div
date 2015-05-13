@@ -98,11 +98,9 @@ DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
 
 # Use this file to include sensitive data that shouldn't be version controlled.
 # Others forking this project will need to create their own local.mk.
--include local.mk
-# Warn the user if local.mk doesn't exist.
-# TODO: Does this do what I want?
-local.mk:
-	@echo "No local make file."
+# If local.mk is vital and you would like the user to be alerted to its
+# absence, remove the preceeding '-'.
+include local.mk
 
 # }}}
 # ====================
@@ -124,7 +122,7 @@ export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 # TODO: Deal with virtualenvs in a more transparent way.
 
 # Use the following line to add files and directories to be deleted on `make clean`:
-CLEANUP += res/* seq/* tre/* raw/traces ${ALL_TRACE_DIRS}
+CLEANUP += res/* seq/* tre/* meta/*
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -141,64 +139,89 @@ all: docs figs res
 
 # }}}
 # ==============
-#  Data Recipes {{{0
+#  Data Recipes {{{-1
 # ==============
 # User defined recipes for cleaning up and initially parsing data.
 # e.g. Slicing out columns, combining data sources, alignment, generating
 # phylogenies, etc.
 
-# Get files {{{
-# Download {{{
-RAW_CLONES_SEQ_NAMES := $(shell cut -f1 etc/clones.names.tsv)
-RAW_CLONES_AB1 = $(patsubst %,raw/%.ab1,${RAW_CLONES_SEQ_NAMES})
+# TODO: Script the writing of this file.
+include data.mk
 
-# All data files should be stored as a tarball in my Public/Data dropbox
-# dir.
-raw/%.tgz:
-	wget --directory-prefix=${@D} https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
+# Remote data {{{
+DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz
+# Dropbox {{{
+define GET_FROM_DROPBOX
+wget --no-clobber --directory-prefix=${@D} https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
+endef
 
-raw/%/: raw/%.tgz
-	tar -C raw/ -xzf $^
-
-# Move traces from the extracted directories to raw/traces/
-ALL_TRACE_DIRS = raw/2015-04-29_mcrA_clones/
-get-traces: ${ALL_TRACE_DIRS}
-	@mkdir -p raw/traces
-	for directory in $^; do \
-		cp $$directory/*.ab1 raw/traces ; \
-	done
+# List of <dir>.tgz data repos in my Dropbox Public/Data/ directory.
+$(addprefix raw/,${DROPBOX_REPOS}):
+	${GET_FROM_DROPBOX}
 
 # }}}
-# Make clones.fastq {{{
+# Unpacking and copying {{{
+# Unpack 2015-04-29_mcrA-clones.tgz
+# Repeated target in order to invoke multi-target pattern rule qualities
+raw/2015-04-29_mcrA-clones/%.ab1 raw/2015-04-29_mcrA-clones/%.ab1: raw/2015-04-29_mcrA-clones.tgz
+	tar -C raw/ -xzf $^
+	touch ${@D}/*
+
+# Copy ab1 files from the unpacked TGZs to the raw/ directory
+# Mapping from the target *.ab1 file to the source is
+# set in data.mk
+raw/%.ab1:
+	cp $^ $@
+
+# }}}
+# }}}
+# Make FASTQs {{{
 # TODO: Should I recommend using %-pattern rules whenever possible?
 # or is it better to start with hard-coded rules and then switch to them
 # later?
 
-raw/%.fastq: raw/traces/%.ab1 bin/make_fastq.py
-	phred $< -qd ${<D} -sd ${<D} -raw $*
-	bin/make_fastq.py $<.seq $<.qual > $@
-	rm $<.seq $<.qual
+raw/qual raw/seq:
+	mkdir -p $@
 
-# Concatenate all of the experimental sequences into a raw fastq file, rename
-# them, and then remove those which have been a priori deemed "suspicious".
-RAW_CLONES_FASTQ = $(patsubst %,raw/%.fastq,${RAW_CLONES_SEQ_NAMES})
-seq/clones.fastq: bin/utils/rename_seqs.py etc/clones.names.tsv \
+raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/%.ab1 | raw/qual raw/seq
+	phred $< -qd ${<D}/qual -sd ${<D}/seq -raw $*
+
+raw/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
+
+# Pre-requisites set in data.mk
+raw/clones.all.fastq:
+	cat $^ > $@
+
+seq/clones.fastq: raw/clones.all.fastq \
+				  bin/utils/rename_seqs.py etc/clones.names.tsv \
 				  bin/utils/drop_seqs.py etc/clones.suspect.list \
-				  ${RAW_CLONES_FASTQ}
-	cat ${RAW_CLONES_FASTQ} | $(word 1,$^) -f fastq -t fastq $(word 2,$^) | $(word 3,$^) $(word 4,$^) -f fastq -t fastq > $@
+				  raw/clones.all.fastq
+	cat $(word 1,$^) \
+		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
+		| $(word 4,$^) $(word 5,$^) -f fastq -t fastq > $@
 
 # }}}
-# Append reference sequences {{{
+# Reference sequences {{{
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
-seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.refs.fn \
-			 bin/utils/drop_seqs.py etc/refs.suspect.list
-	$(word 1,$^) $(word 2,$^) $(word 3,$^) | $(word 4,$^) $(word 5,$^) > $@
 
-seq/refs2.fn: bin/utils/fetch_seqs.py etc/refs.types.list raw/mcra.refs.fn \
+meta/refs.list: etc/refs.names.tsv
+	cut -f1 $^ > $@
+
+seq/refs.fn: bin/utils/fetch_seqs.py meta/refs.list raw/mcra.published.fn \
+			bin/utils/rename_seqs.py etc/refs.names.tsv \
+			bin/utils/drop_seqs.py etc/refs.suspect.list
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
+		| $(word 4,$^) $(word 5,$^) \
+		| $(word 6,$^) $(word 7,$^) > $@
+
+seq/refs2.fn: bin/utils/fetch_seqs.py etc/refs.reduced.list raw/mcra.published.fn \
 			  bin/utils/rename_seqs.py etc/refs.names.tsv \
 			  bin/utils/drop_seqs.py etc/refs.suspect.list
-	$(word 1,$^) $(word 2,$^) $(word 3,$^) | $(word 4,$^) $(word 5,$^) | $(word 6,$^) $(word 7,$^) > $@
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
+		| $(word 4,$^) $(word 5,$^) \
+		| $(word 6,$^) $(word 7,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
@@ -209,8 +232,6 @@ seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
 seq/both2.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs2.ampli.fn
 	cat $^ > $@
 
-
-# }}}
 # }}}
 # Remove uniformative sequence {{{
 # Excise amplicon {{{
@@ -259,24 +280,30 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 # }}}
 # Align {{{
 seq/%.afa: seq/%.fa
-	cat $^ | muscle > $@
+	muscle < $^ > $@
 
-seq/%.afn: bin/utils/backalign.py seq/%.afa seq/%.frame.fn
+seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 # }}}
 # Gblocks {{{
-
-# gblocks always throws an error code of 1
 seq/%.gb.afn: seq/%.afn
 	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
 	mv $^-gb $@
+# gblocks always throws an error code of 1
 
 seq/%.gb.afa: seq/%.afa
 	Gblocks $^ -t=p -p=n || [ $$? == 1 ]
 	mv $^-gb $@
 
 # }}}
+# =======================
+#  Analysis Recipes {{{0
+# =======================
+# User defined recipes for analyzing the data.
+# e.g. Calculating means, distributions, correlations, fitting models, etc.
+# Basically anything that *could* go into the paper as a table.
+
 # Trees {{{
 tre/%.nucl.nwk: seq/%.afn
 	fasttree -nt $^ > $@
@@ -285,13 +312,7 @@ tre/%.prot.nwk: seq/%.afa
 	fasttree < $^ > $@
 
 # }}}
-# =======================
-#  Analysis Recipes
-# =======================
-# User defined recipes for analyzing the data.
-# e.g. Calculating means, distributions, correlations, fitting models, etc.
-# Basically anything that *could* go into the paper as a table.
-
+# }}}
 
 # ==================
 #  Graphing Recipes
