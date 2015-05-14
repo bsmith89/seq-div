@@ -156,6 +156,9 @@ endef
 $(addprefix raw/,${DROPBOX_REPOS}):
 	${GET_FROM_DROPBOX}
 
+raw/mcra.published.fn:
+	${GET_FROM_DROPBOX}
+
 # Unpacking and copying {{{3
 
 # Automatically generate archive.mk: rules for unpacking archived data files.
