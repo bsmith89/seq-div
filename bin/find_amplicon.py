@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Trim reads based on where a primer hits."""
+"""Trim reads based on where a primer hits.
+
+TODO: Calculate the temperature of melting for each hit and determine
+if it would be amplified.
+
+"""
 
 
 from Bio.Seq import Seq
@@ -93,8 +98,9 @@ def main():
             hit_info = get_hit_info(rec.id, hits_table)
         except (NoHitsError, MultipleHitsError) as err:
             warn(str(err))
-            rec = rec[0:0]
-            write(rec, args.out_handle, args.fmt_outfile)
+            if not args.drop:
+                rec = rec[0:0]
+                write(rec, args.out_handle, args.fmt_outfile)
             continue
         hit_info = {col:hit_info[col].iloc[0] for col in hit_info.columns}
         hit_primer_set = hit_info['primer_set']
@@ -112,7 +118,6 @@ def main():
             out_rec.id = rec.id
             out_rec.description = rec.description
         else:
-            pass
             out_rec = rec[trim_start:trim_stop]
         write(out_rec, args.out_handle, args.fmt_outfile)
 

@@ -107,6 +107,15 @@ include local.mk
 #  User Configuration {{{1
 # ====================
 
+# Add sub-targets (prerequisites) to the major phony targets.
+.PHONY: docs figs res
+docs:
+figs:
+res: tre/both2.ampli.qtrim.gb.nucl.nwk tre/both2.ampli.qtrim.gb.prot.nwk
+
+# What files are generated on `make all`?
+all: docs figs res
+
 # Name, and directory, of the python virtual environment:
 VENV = ./venv
 # All recipes are run as though they are within the virtualenv.
@@ -128,15 +137,6 @@ CLEANUP += res/* seq/* tre/* meta/*
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
 DATA_DIRS += seq/ tre/
 
-# Add sub-targets (prerequisites) to the major phony targets.
-.PHONY: docs figs res
-docs:
-figs:
-res: tre/both2.ampli.qtrim.gb.nucl.nwk tre/both2.ampli.qtrim.gb.prot.nwk
-
-# What files are generated on `make all`?
-all: docs figs res
-
 # ==============
 #  Data {{{1
 # ==============
@@ -146,12 +146,13 @@ all: docs figs res
 
 # Archives {{{2
 # Dropbox downloads {{{3
-DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz
-define GET_FROM_DROPBOX
-wget --no-clobber --directory-prefix=${@D} https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
-endef
 
 # List of <dir>.tgz data repos in my Dropbox Public/Data/ directory.
+DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz 2015-05-13_mcrA-clones.tgz
+define GET_FROM_DROPBOX
+wget --no-clobber --directory-prefix=${@D} \
+	https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
+endef
 $(addprefix raw/,${DROPBOX_REPOS}):
 	${GET_FROM_DROPBOX}
 
@@ -206,17 +207,17 @@ seq/clones.fastq: raw/clones.all.fastq \
 # suspicious.
 
 meta/refs.list: etc/refs.names.tsv
-	cut -f1 $^ > $@
+	cut -f2 $^ > $@
 
-seq/refs.fn: bin/utils/fetch_seqs.py meta/refs.list raw/mcra.published.fn \
-			bin/utils/rename_seqs.py etc/refs.names.tsv \
+seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
+			bin/utils/fetch_seqs.py meta/refs.list \
 			bin/utils/drop_seqs.py etc/refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) \
 		| $(word 6,$^) $(word 7,$^) > $@
 
-seq/refs2.fn: bin/utils/fetch_seqs.py etc/refs.reduced.list raw/mcra.published.fn \
-			  bin/utils/rename_seqs.py etc/refs.names.tsv \
+seq/refs2.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
+			  bin/utils/fetch_seqs.py etc/refs.reduced.list \
 			  bin/utils/drop_seqs.py etc/refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) \
@@ -258,7 +259,7 @@ seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.f
 # Quality trim {{{3
 
 seq/%.qtrim.fastq: bin/qtrim_reads.py seq/%.fastq
-	$^ -t fastq > $@
+	$^ --drop -t fastq > $@
 
 # Convert filetypes {{{2
 seq/%.fn: bin/utils/convert.py seq/%.fastq
@@ -275,7 +276,7 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
 
-seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
+seq/%.afn: bin/utils/backalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 # Gblocks {{{2

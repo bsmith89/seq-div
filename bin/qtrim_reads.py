@@ -18,6 +18,9 @@ logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
 def quality_trim(rec, thr):
+    if len(rec.seq) == 0:
+        return rec
+
     start = 0
     stop = len(rec)
     quality = rec.letter_annotations['phred_quality']
@@ -41,7 +44,9 @@ def _get_quality_args_parser():
                          "DEFAULT: {}").format(DEFAULT_QUAL_THRESH))
     g.add_argument('--min-length', '-l', type=int,
                    default=DEFAULT_MIN_LEN,
-                   help=("minimum length sequence to output"))
+                   help=("minimum length sequence; "
+                         "makes noise only unless --drop "
+                         "DEFAULT: {}").format(DEFAULT_MIN_LEN))
     return p
 
 def _get_fastq_in_parser():
@@ -70,6 +75,7 @@ def main():
     logger.debug(args)
 
     for rec_in in parse(args.in_handle, 'fastq'):
+        logger.debug(rec_in)
         rec_out = quality_trim(rec_in, args.quality_threshold)
         length = len(rec_out.seq)
         if length < args.min_length:
