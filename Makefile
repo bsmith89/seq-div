@@ -186,7 +186,7 @@ raw/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual
 
 include raw/all-clones.mk
 # All pre-requisites for raw/clones.all.fastq
-raw/all-clones.mk: etc/clones.names.tsv
+raw/all-clones.mk: meta/clones.names.tsv
 	@echo Generating $@...
 	@echo > $@
 	@for clone in $$(cut -f1 $^); do \
@@ -196,9 +196,12 @@ raw/all-clones.mk: etc/clones.names.tsv
 raw/clones.all.fastq:
 	cat $^ > $@
 
+meta/clones.names.tsv: etc/clones.meta.tsv
+	awk '{printf($$1 "\t" $$2 "." $$3 "_" $$4 "." $$5 "\n")}' $^ \
+		| sed '1,1d' > $@
 
 seq/clones.fastq: raw/clones.all.fastq \
-				  bin/utils/rename_seqs.py etc/clones.names.tsv \
+				  bin/utils/rename_seqs.py meta/clones.names.tsv \
 				  bin/utils/drop_seqs.py etc/clones.suspect.list \
 				  raw/clones.all.fastq
 	cat $(word 1,$^) \
@@ -279,7 +282,7 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
 
-seq/%.afn: bin/utils/backalign.py seq/%.afa seq/%.frame.fn
+seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 # Gblocks {{{2
