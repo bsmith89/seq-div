@@ -192,7 +192,16 @@ have hoped.
 
 ![See the clones (at the top) have an aligned 5' overhang that doesn't match _any_ of the references](static/2015-05-07_alignment.png)
 
-(date: 2015-05-09)
+(date: 2015-05-19)
+
+Sequence "2481783.M13REV" which I have listed as a re-sequence of U003.2.1.C03
+appears to actually be a re-sequence of "U003.2.1.C02".
+Which, if I'm not mistaken, is a good thing, since it has NO sequences, at
+least within the g-blocks, and yet _does_ differ from many other sequences,
+e.g. U011.3.1.B01 at two positions.
+
+I'll correct the meta-data, but I have to correct this in my notebook.
+The two mutations are non-synonymous.
 
 
 ### Things to present at lab meeting ###
