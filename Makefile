@@ -196,17 +196,20 @@ raw/all-clones.mk: meta/clones.names.tsv
 raw/clones.all.fastq:
 	cat $^ > $@
 
-meta/clones.names.tsv: etc/clones.meta.tsv
-	awk '{printf($$1 "\t" $$2 "." $$3 "_" $$4 "." $$5 "\n")}' $^ \
+meta/clones.names.tsv: meta/clones.annot.tsv
+	awk '{print $$2 "\t" $$1}' $^ \
 		| sed '1,1d' > $@
 
+meta/clones.annot.tsv: etc/clones.meta.tsv
+	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "\t" $$0 }' $^ > $@
+
+
 seq/clones.fastq: raw/clones.all.fastq \
-				  bin/utils/rename_seqs.py meta/clones.names.tsv \
 				  bin/utils/drop_seqs.py etc/clones.suspect.list \
-				  raw/clones.all.fastq
+				  bin/utils/rename_seqs.py meta/clones.names.tsv
 	cat $(word 1,$^) \
 		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) -f fastq -t fastq > $@
+		| $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
 
 # Reference sequences {{{2
 # Rename reference sequences and remove those which have been a priori deemed
@@ -216,18 +219,14 @@ meta/refs.list: etc/refs.names.tsv
 	cut -f2 $^ > $@
 
 seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
-			bin/utils/fetch_seqs.py meta/refs.list \
-			bin/utils/drop_seqs.py etc/refs.suspect.list
+			 bin/utils/fetch_seqs.py meta/refs.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) \
-		| $(word 6,$^) $(word 7,$^) > $@
+		| $(word 4,$^) $(word 5,$^) > $@
 
 seq/refs2.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
-			  bin/utils/fetch_seqs.py etc/refs.reduced.list \
-			  bin/utils/drop_seqs.py etc/refs.suspect.list
+			  bin/utils/fetch_seqs.py etc/refs.reduced.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) \
-		| $(word 6,$^) $(word 7,$^) > $@
+		| $(word 4,$^) $(word 5,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
