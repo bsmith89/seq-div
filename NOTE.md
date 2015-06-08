@@ -23,6 +23,7 @@ Sequence based analysis of the composition of the mcrA gene population.
 -  phred
 -  Muscle
 -  FastTree
+-  HMMER
 
 <!-- /Top Matter }}}-->
 
@@ -96,6 +97,37 @@ Marker genes aren't necessarily the best place to look, though.
 I'm curious about the range of branch length ratios (BLRs) that I might find
 in the methanogen or Hansen sets.
 
+(date: 2015-06-08)
+
+Reference sequences taken from IMG have been culled down to a single sequence
+per species, per paralog.
+This subset of all publicly available sequences is defined in the file
+etc/refs.names.tsv along with a mapping from IMG IDs to more understandable
+genus/species names.
+I can get a pretty great alignment using `hmmalign` with the
+[mcrA HMM from fungene](http://fungene.cme.msu.edu/hmm_detail.spr?hmm_id=16).
+However, this model was made with just 26 sequences, with some deficiencies
+in phylogenetic coverage.
+Also, many of the sequences are fragments.
+To solve this problem, I would like to use an alignment of my own.
+How to make this alignment as high-quality as possible, is the question.
+One option is to start with an alignment to the FunGene model, then manually
+or automatically (`muscle -refine [...]`) refine that alignment and use that as the
+basis for a new alignment.
+Making this process reproducible is not currently possible, but my method
+for manually aligning sequences is pretty simple.
+I just find regions of
+hmmalign output with gaps (and presumably residues which don't fit the model),
+pick flanking highly conserved positions, and have muscle align between these
+columns.
+Based on the final log-likelihood value of a phylogenetic tree produced by
+FastTree, this manual refinement can have a large improvement, and is often
+larger than automatic refinement.
+Unfortunately, there's no record of exactly what was changed and why I decided
+to make the changes that I did.
+I _can_ commit my alignment to the repository, but this is a relatively
+downstream file in my analysis.
+
 ## Primer Selection for Methanogen Phylogenetic Marker Libraries ##
 
 (date: 2015-04-08)
@@ -161,6 +193,19 @@ and [here](http://www.lifetechnologies.com/us/en/home/products-and-services/prod
 
 Methanogenesis is defined for KEGG Module M00567.
 
+(date: 2015-05-23)
+
+I want to make a system to automate the design of primers.
+Primers should be judged on two criteria and filtered by 3 others.
+Primers should have low degeneracy, but reach a large amount of the mcrA
+diversity on the tree.
+Degeneracy is measured as the total number of unique sequences in a degenerate
+mix.
+Diversity is measured as the total branch length of the tree hit by the
+primers.
+It would be nice to include imperfect matches, but weight the results by the
+quality of the match.
+
 ## Clone Library Sequence Analysis ##
 (date: 2015-04-28)
 
@@ -194,14 +239,16 @@ have hoped.
 
 (date: 2015-05-19)
 
-Sequence "2481783.M13REV" which I have listed as a re-sequence of U003.2.1.C03
-appears to actually be a re-sequence of "U003.2.1.C02".
-Which, if I'm not mistaken, is a good thing, since it has NO sequences, at
+Sequence `2481783.M13REV` which I have listed as a re-sequence of `U003.2.1.C03`
+appears to actually be a re-sequence of `U003.2.1.C02`.
+Which, if I'm not mistaken, is a good thing, since these two do not differ, at
 least within the g-blocks, and yet _does_ differ from many other sequences,
-e.g. U011.3.1.B01 at two positions.
+e.g. `U011.3.1.B01` at two positions.
 
 I'll correct the meta-data, but I have to correct this in my notebook.
 The two mutations are non-synonymous.
+
+![Check out this sweet tree!  (Color-coded by subject.)](static/2015-05-19_tree.png)
 
 
 ### Things to present at lab meeting ###

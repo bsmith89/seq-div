@@ -131,7 +131,8 @@ export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 # TODO: Deal with virtualenvs in a more transparent way.
 
 # Use the following line to add files and directories to be deleted on `make clean`:
-CLEANUP += res/* seq/* tre/* meta/*
+CLEANUP += res/* seq/* tre/* meta/*  # Remove intermediate results
+CLEANUP += raw/unarchive.mk raw/all-clones.mk  # Remove sub-makefiles
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -277,6 +278,12 @@ seq/%.frame.fn: ./bin/infer_frame.py seq/%.fn
 seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 	$^ > $@
 
+#  Analysis {{{1
+# =======================
+# User defined recipes for analyzing the data.
+# e.g. Calculating means, distributions, correlations, fitting models, etc.
+# Basically anything that *could* go into the paper as a table.
+
 # Align {{{2
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
@@ -284,6 +291,18 @@ seq/%.afa: seq/%.fa
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
+# TODO: In the future I might want to deal with other genes, too.
+# Consider making this specific for only the files which
+# need to be aligned to the mcrA model.
+seq/%.hmmalign.afa: etc/mcra.fungene.hmm seq/%.fa bin/utils/convert.py
+	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
+		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta > $@
+
+seq/%.hmmalign.afn: bin/utils/codonalign.py seq/%.hmmalign.afa seq/%.frame.fn
+	$^ > $@
+
+seq/%.refine.afa: seq/%.afa
+	muscle -refine < $< > $@
 # Gblocks {{{2
 seq/%.gb.afn: seq/%.afn
 	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
@@ -295,12 +314,6 @@ seq/%.gb.afa: seq/%.afa
 	mv $^-gb $@
 
 # =======================
-#  Analysis {{{1
-# =======================
-# User defined recipes for analyzing the data.
-# e.g. Calculating means, distributions, correlations, fitting models, etc.
-# Basically anything that *could* go into the paper as a table.
-
 # Trees {{{2
 tre/%.nucl.nwk: seq/%.afn
 	fasttree -nt $^ > $@
