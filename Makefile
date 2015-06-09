@@ -111,7 +111,7 @@ include local.mk
 .PHONY: docs figs res
 docs:
 figs:
-res: tre/both2.ampli.qtrim.gb.nucl.nwk tre/both2.ampli.qtrim.gb.prot.nwk
+res: tre/mcra-both2.ampli.qtrim.gb.nucl.nwk tre/mcra-both2.ampli.qtrim.gb.prot.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
@@ -132,7 +132,7 @@ export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 
 # Use the following line to add files and directories to be deleted on `make clean`:
 CLEANUP += res/* seq/* tre/* meta/*  # Remove intermediate results
-CLEANUP += raw/unarchive.mk raw/all-clones.mk  # Remove sub-makefiles
+CLEANUP += raw/unarchive.mk raw/mcra-clones.all.fastq.mk  # Remove sub-makefiles
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -185,29 +185,29 @@ raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/%.ab1 | raw/qual raw/seq
 raw/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
-include raw/all-clones.mk
-# All pre-requisites for raw/clones.all.fastq
-raw/all-clones.mk: meta/clones.names.tsv
+include raw/mcra-clones.all.fastq.mk
+# All pre-requisites for raw/mcra-clones.all.fastq
+raw/mcra-clones.all.fastq.mk: meta/mcra-clones.names.tsv
 	@echo Generating $@...
 	@echo > $@
 	@for clone in $$(cut -f1 $^); do \
-		printf 'raw/clones.all.fastq: raw/%s.fastq\n' $$clone >> $@; \
+		printf 'raw/mcra-clones.all.fastq: raw/%s.fastq\n' $$clone >> $@; \
 	done
 
-raw/clones.all.fastq:
+raw/mcra-clones.all.fastq:
 	cat $^ > $@
 
-meta/clones.names.tsv: meta/clones.annot.tsv
+meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
 	awk '{print $$2 "\t" $$1}' $^ \
 		| sed '1,1d' > $@
 
-meta/clones.annot.tsv: etc/clones.meta.tsv
+meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "\t" $$0 }' $^ > $@
 
 
-seq/clones.fastq: raw/clones.all.fastq \
-				  bin/utils/drop_seqs.py etc/clones.suspect.list \
-				  bin/utils/rename_seqs.py meta/clones.names.tsv
+seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
+				  bin/utils/drop_seqs.py etc/mcra-clones.suspect.list \
+				  bin/utils/rename_seqs.py meta/mcra-clones.names.tsv
 	cat $(word 1,$^) \
 		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
 		| $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
@@ -216,26 +216,26 @@ seq/clones.fastq: raw/clones.all.fastq \
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
 
-meta/refs.list: etc/refs.names.tsv
+meta/mcra-refs.list: etc/mcra-refs.names.tsv
 	cut -f2 $^ > $@
 
-seq/refs.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
-			 bin/utils/fetch_seqs.py meta/refs.list
+seq/mcra-refs.fn: bin/utils/rename_seqs.py etc/mcra-refs.names.tsv raw/mcra.published.fn \
+			 bin/utils/fetch_seqs.py meta/mcra-refs.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) > $@
 
-seq/refs2.fn: bin/utils/rename_seqs.py etc/refs.names.tsv raw/mcra.published.fn \
-			  bin/utils/fetch_seqs.py etc/refs.reduced.list
+seq/mcra-refs2.fn: bin/utils/rename_seqs.py etc/mcra-refs.names.tsv raw/mcra.published.fn \
+			  bin/utils/fetch_seqs.py etc/mcra-refs.reduced.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
-seq/both.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs.ampli.fn
+seq/mcra-both.ampli.qtrim.fn: seq/mcra-clones.ampli.qtrim.fn seq/mcra-refs.ampli.fn
 	cat $^ > $@
 
-seq/both2.ampli.qtrim.fn: seq/clones.ampli.qtrim.fn seq/refs2.ampli.fn
+seq/mcra-both2.ampli.qtrim.fn: seq/mcra-clones.ampli.qtrim.fn seq/mcra-refs2.ampli.fn
 	cat $^ > $@
 
 # Remove uniformative sequence {{{2
@@ -256,7 +256,7 @@ res/%.psearch.tsv: res/%.psearch.out bin/parse_psearch.py
 
 # Re-orient the sequences to match the forward-reverse in etc/*.primers
 # and trim to within the primers
-seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/clones.psearch.tsv seq/%.fastq
+seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/mcra-clones.psearch.tsv seq/%.fastq
 	$(word 1,$^) -f fastq -t fastq $(word 2,$^) $(word 3,$^) $(word 4,$^) > $@
 
 seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.fn
@@ -291,17 +291,14 @@ seq/%.afa: seq/%.fa
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
-# TODO: In the future I might want to deal with other genes, too.
-# Consider making this specific for only the files which
-# need to be aligned to the mcrA model.
-seq/%.hmmalign.afa: etc/mcra.fungene.hmm seq/%.fa bin/utils/convert.py
+seq/%.mcra-hmmaln.afa: etc/mcra.fungene.hmm seq/%.fa bin/utils/convert.py
 	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
 		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta > $@
 
-seq/%.hmmalign.afn: bin/utils/codonalign.py seq/%.hmmalign.afa seq/%.frame.fn
+seq/%.mcra-hmmaln.afn: bin/utils/codonalign.py seq/%.mcra-hmmaln.afa seq/%.frame.fn
 	$^ > $@
 
-seq/%.refine.afa: seq/%.afa
+seq/%.auto-refine.afa: seq/%.afa
 	muscle -refine < $< > $@
 # Gblocks {{{2
 seq/%.gb.afn: seq/%.afn
