@@ -112,7 +112,8 @@ include local.mk
 docs:
 figs:
 res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
-     tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk
+     tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk \
+     tre/mcra-refs.gb.nucl.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
