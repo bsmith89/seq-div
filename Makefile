@@ -150,7 +150,7 @@ DATA_DIRS += seq/ tre/
 # Dropbox downloads {{{3
 
 # List of <dir>.tgz data repos in my Dropbox Public/Data/ directory.
-DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz 2015-05-13_mcrA-clones.tgz
+DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz 2015-05-13_mcrA-clones.tgz 2015-06-09_mcrA-clones.tgz
 define GET_FROM_DROPBOX
 wget --no-clobber --directory-prefix=${@D} \
 	https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
