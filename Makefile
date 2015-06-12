@@ -305,14 +305,16 @@ seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 # Gblocks {{{2
-seq/%.gb.afn: seq/%.afn
-	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
-	mv $^-gb $@
 # gblocks always throws an error code of 1
+seq/%.gb.afn res/%.gb.html: seq/%.afn
+	Gblocks $^ -t=c -p=y -v=150 || [ $$? == 1 ]
+	mv $^-gb seq/$*.gb.afn
+	mv $^-gb.htm res/$*.nucl.gb.html
 
 seq/%.gb.afa: seq/%.afa
-	Gblocks $^ -t=p -p=n || [ $$? == 1 ]
-	mv $^-gb $@
+	Gblocks $^ -t=p -p=y -v=150 || [ $$? == 1 ]
+	mv $^-gb seq/$*.gb.afa
+	mv $^-gb.htm res/$*.prot.gb.html
 
 # =======================
 # Trees {{{2
