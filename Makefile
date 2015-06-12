@@ -163,8 +163,12 @@ raw/mcra.published.fn:
 
 # Unpacking and copying {{{3
 
+
+meta/archive-contents.tsv: etc/mcra-clones.meta.tsv
+	sed '1,1d' $< | awk '{print $$1 ".ab1\t" $$8}' > $@
+
 # Automatically generate archive.mk: rules for unpacking archived data files.
-raw/unarchive.mk: etc/archive-contents.tsv
+raw/unarchive.mk: meta/archive-contents.tsv
 	@echo Generating $@...
 	@cat $^ | awk '{printf("raw/%s: raw/%s/%s\n\tcp $$^ $$@\n", $$1, $$2, $$1)}' > $@
 	@for archive in $$(cut -f2 $^ | sort | uniq); do \
