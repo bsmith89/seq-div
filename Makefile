@@ -111,7 +111,8 @@ include local.mk
 .PHONY: docs figs res
 docs:
 figs:
-res: tre/mcra-both2.ampli.qtrim.gb.nucl.nwk tre/mcra-both2.ampli.qtrim.gb.prot.nwk
+res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
+     tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
@@ -232,35 +233,37 @@ seq/mcra-refs2.fn: bin/utils/rename_seqs.py etc/mcra-refs.names.tsv raw/mcra.pub
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
-seq/mcra-both.ampli.qtrim.fn: seq/mcra-clones.ampli.qtrim.fn seq/mcra-refs.ampli.fn
+seq/mcra-both.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcra-refs.luton-ampli.fn
 	cat $^ > $@
 
-seq/mcra-both2.ampli.qtrim.fn: seq/mcra-clones.ampli.qtrim.fn seq/mcra-refs2.ampli.fn
+seq/mcra-both2.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcra-refs2.luton-ampli.fn
 	cat $^ > $@
 
 # Remove uniformative sequence {{{2
 # Excise amplicon {{{3
 # Search for primer hits:
 res/%.psearch.out: seq/%.fn etc/primers.tsv
-	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
+	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 50 -outfile $@
 # I use 40% mismatchpercent so that I can include many hits before
 # narrowing by other criteria.
 
 res/%.psearch.out: seq/%.fastq etc/primers.tsv
-	primersearch -seqall $(word 1,$^) -sformat fastq -infile $(word 2,$^) -mismatchpercent 40 -outfile $@
+	primersearch -seqall $(word 1,$^) -sformat fastq -infile $(word 2,$^) -mismatchpercent 50 -outfile $@
 # I use 40% mismatchpercent so that I can include many hits before
 # narrowing by other criteria.
 
-res/%.psearch.tsv: res/%.psearch.out bin/parse_psearch.py
-	$(word 2,$^) < $< > $@
+res/%.psearch.tsv: bin/parse_psearch.py etc/primers.tsv res/%.psearch.out
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
+
+LUTON_FIND_AMPLICON_OPTS = --primer-set luton --max-mismatch 5
 # Re-orient the sequences to match the forward-reverse in etc/*.primers
 # and trim to within the primers
-seq/%.ampli.fastq: ./bin/find_amplicon.py etc/primers.tsv res/mcra-clones.psearch.tsv seq/%.fastq
-	$(word 1,$^) -f fastq -t fastq $(word 2,$^) $(word 3,$^) $(word 4,$^) > $@
+seq/%.luton-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
+	$(word 1,$^) ${LUTON_FIND_AMPLICON_OPTS} --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
 
-seq/%.ampli.fn: ./bin/find_amplicon.py etc/primers.tsv res/%.psearch.tsv seq/%.fn
-	$^ > $@
+seq/%.luton-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+	$^ ${LUTON_FIND_AMPLICON_OPTS} --drop > $@
 
 # Quality trim {{{3
 

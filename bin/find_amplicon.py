@@ -17,19 +17,11 @@ from warnings import warn
 from utils.lib import cli
 import argparse
 import logging
+from copy import copy
+
 
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
-
-def parse_primer_sets(handle):
-    pairs = {}
-    for line in handle:
-        name, forward, reverse = tuple(word.strip() for word in line.split())
-        pairs[name] = (SeqRecord(id=name + "_forward",
-                           seq=Seq(forward, alphabet=IUPACAmbiguousDNA)),
-                       SeqRecord(id=name + "_reverse",
-                           seq=Seq(reverse, alphabet=IUPACAmbiguousDNA)))
-    return pairs
 
 class Error(Exception):
     pass
@@ -51,27 +43,27 @@ class MultipleHitsError(Error):
 
 def get_hit_info(template_id, hits_table, best=True):
     hit_info = hits_table[hits_table.template == template_id]
-    if len(hit_info) == 0:
+    if (len(hit_info) > 1) and (not best):
         raise NoHitsError(template_id)
-    elif len(hit_info) > 1:
-        if not best:
-            raise MultipleHitsError(template_id)
-        else:
-            hit_info['mismatch_sum'] = hit_info.mismatch_start + hit_info.mismatch_stop
-            hit_info = hit_info.sort('mismatch_sum').iloc[0:1]
+    elif (len(hit_info) == 0):
+        raise NoHitsError(template_id)
     else:
-        pass  # hit_info is already the one hit
-    return hit_info
+        return hit_info.ix[hit_info.sort('mis_sum').index[0]]
 
 def _get_extra_args():
     p = argparse.ArgumentParser(add_help=False)
     g = p.add_argument_group(*cli.POS_GROUP)
-    g.add_argument("primers_handle", metavar='PRIMERS',
-                   type=argparse.FileType('r'),
-                   help="primers file")
-    g.add_argument("table_handle", metavar='AMPLICONS',
+    g.add_argument("table_handle", metavar='PSEARCH',
                    type=argparse.FileType('r'),
                    help="parsed primersearch results")
+    h = p.add_argument_group(*cli.PAR_GROUP)
+    h.add_argument("--max-mismatch", type=int,
+                   default=None,
+                   help=("maximum mismatches allowed. "
+                         "DEFAULT: no limit"))
+    h.add_argument("--primer-set", type=str,
+                   default=None,
+                   help=("name of the primer set to use. DEFAULT: no consideration"))
     return p
 
 
@@ -85,41 +77,43 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
+def get_amplicon(rec, hits):
+    out_rec = copy(rec)
+    try:
+        hit_info = get_hit_info(rec.id, hits)
+    except NoHitsError as err:
+        out_rec = out_rec[:0]
+        return out_rec, None
+    trim_start = hit_info['start'] + hit_info['len_start']
+    trim_stop = hit_info['stop'] - hit_info['len_stop']
+    out_rec = out_rec[trim_start:trim_stop]
+    if hit_info['primer_start'] == 'reverse':
+        id, description = out_rec.id, out_rec.description
+        out_rec = out_rec.reverse_complement()
+        out_rec.id = id
+        out_rec.description = description
+    return out_rec, hit_info
+
 def main():
     args = parse_args(sys.argv)
     logging.basicConfig(level=args.log_level)
     logger.debug(args)
 
-    primer_sets = parse_primer_sets(args.primers_handle)
-    hits_table = read_table(args.table_handle)
+    hits = read_table(args.table_handle)
+    hits['mis_sum'] = hits.mis_start + hits.mis_stop
+    if args.max_mismatch:
+        hits = hits[hits.mis_sum <= args.max_mismatch]
+    if args.primer_set:
+        hits = hits[hits.primer_set == args.primer_set]
+
     recs = parse(args.in_handle, args.fmt_infile)
     for rec in recs:
-        try:
-            hit_info = get_hit_info(rec.id, hits_table)
-        except (NoHitsError, MultipleHitsError) as err:
-            warn(str(err))
-            if not args.drop:
-                rec = rec[0:0]
-                write(rec, args.out_handle, args.fmt_outfile)
-            continue
-        hit_info = {col:hit_info[col].iloc[0] for col in hit_info.columns}
-        hit_primer_set = hit_info['primer_set']
-        fwd_primer = str(primer_sets[hit_primer_set][0].seq).upper()
-        rev_primer = str(primer_sets[hit_primer_set][1].seq).upper()
-        hit_primer_start = hit_info['primer_start'].upper()
-        hit_primer_stop = hit_info['primer_stop'].upper()
-        hit_start = hit_info['start']
-        hit_stop = hit_info['stop']
-        trim_start = hit_start + len(hit_primer_start)
-        trim_stop = hit_stop - len(hit_primer_stop)
-        if hit_primer_start != fwd_primer:
-            assert hit_primer_stop == fwd_primer
-            out_rec = rec[trim_start:trim_stop].reverse_complement()
-            out_rec.id = rec.id
-            out_rec.description = rec.description
+        amplicon, hit_info = get_amplicon(rec, hits)
+        logger.debug(hit_info)
+        if (type(hit_info) == type(None)) and args.drop:
+            warn(cli.DropSequenceWarning("No hit found for {rec.id}".format(rec=rec)))
         else:
-            out_rec = rec[trim_start:trim_stop]
-        write(out_rec, args.out_handle, args.fmt_outfile)
+            write(amplicon, args.out_handle, args.fmt_outfile)
 
 if __name__ == "__main__":
     main()
