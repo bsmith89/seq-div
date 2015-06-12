@@ -298,6 +298,13 @@ seq/%.afa: seq/%.fa
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
+# TODO: Is this really necessary?  No matter what the stem, I'm always going
+# to need <base>.frame.fn, so how do I deal?
+seq/%.mcra-hmmaln.auto-refine.afn: bin/utils/codonalign.py \
+                                   seq/%.mcra-hmmaln.auto-refine.afa \
+                                   seq/%.frame.fn
+	$^ > $@
+
 seq/%.mcra-hmmaln.afa: etc/mcra.fungene.hmm seq/%.fa bin/utils/convert.py
 	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
 		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta > $@
