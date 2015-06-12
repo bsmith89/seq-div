@@ -292,28 +292,18 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 # Basically anything that *could* go into the paper as a table.
 
 # Align {{{2
+seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
+	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
+		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
+		| muscle -refine \
+		> $@
+
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
 
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
-# TODO: Is this really necessary?  No matter what the stem, I'm always going
-# to need <base>.frame.fn, so how do I deal?
-seq/%.mcra-hmmaln.auto-refine.afn: bin/utils/codonalign.py \
-                                   seq/%.mcra-hmmaln.auto-refine.afa \
-                                   seq/%.frame.fn
-	$^ > $@
-
-seq/%.mcra-hmmaln.afa: etc/mcra.fungene.hmm seq/%.fa bin/utils/convert.py
-	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
-		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta > $@
-
-seq/%.mcra-hmmaln.afn: bin/utils/codonalign.py seq/%.mcra-hmmaln.afa seq/%.frame.fn
-	$^ > $@
-
-seq/%.auto-refine.afa: seq/%.afa
-	muscle -refine < $< > $@
 # Gblocks {{{2
 seq/%.gb.afn: seq/%.afn
 	Gblocks $^ -t=c -p=n || [ $$? == 1 ]
