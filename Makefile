@@ -344,6 +344,22 @@ MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_
 
 docs: ${ALL_DOCS_HTML}
 
+# Visualize makefile with cytoscape.
+# requires:
+# https://bitbucket.org/jpbarrette/makegrapher
+# details at: https://code.google.com/p/makegrapher
+res/Makefile.complete: Makefile
+	${MAKE} --makefile=$^ -npr > $@
+
+res/Makefile.dot: res/Makefile.complete
+	make_grapher.py -T $^ -o $@
+
+res/Makefile.gml: res/Makefile.dot
+	gv2gml $^ > $@
+
+res/Makefile.xgml res/Makefile.gxl: res/Makefile.dot
+	gv2gxl $^ > $@
+
 # =================
 #  Cleanup {{{1
 # =================
