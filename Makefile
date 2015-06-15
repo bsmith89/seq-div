@@ -342,7 +342,7 @@ MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_
 %.html: %.md
 	pandoc -f markdown -t html5 -s --highlight-style pygments --mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
 
-docs: ${ALL_DOCS_HTML}
+docs: ${ALL_DOCS_HTML} fig/Makefile.reduced.png
 
 # Visualize makefile with cytoscape.
 # requires:
@@ -354,11 +354,11 @@ res/Makefile.complete: Makefile
 res/Makefile.dot: res/Makefile.complete
 	make_grapher.py -T $^ -o $@
 
-res/Makefile.gml: res/Makefile.dot
-	gv2gml $^ > $@
+res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
+	$(word 1,$^) < $(word 2,$^) > $@
 
-res/Makefile.xgml res/Makefile.gxl: res/Makefile.dot
-	gv2gxl $^ > $@
+fig/Makefile.reduced.png: res/Makefile.reduced.dot
+	dot -Tpng -Grankdir=BT < $^ > $@
 
 # =================
 #  Cleanup {{{1

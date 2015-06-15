@@ -9,3 +9,4 @@ pandas>=0.13.1
 # statsmodels>=0.6.0
 git+https://github.com/bsmith89/biopython.git@ParsePrimerSearchOutput#egg=biopython
 # line_profiler
+git+https://github.com/pygraphviz/pygraphviz.git#egg=pygraphviz
