@@ -352,13 +352,16 @@ res/Makefile.complete: Makefile
 	${MAKE} --makefile=$^ -npr > $@
 
 res/Makefile.dot: res/Makefile.complete
-	make_grapher.py -T $^ -o $@
+	make_grapher.py -T $^ -o $@ >/dev/null
 
 res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
-	$(word 1,$^) < $(word 2,$^) > $@
+	$(word 1,$^) -d '^raw/' -d '\.py$$' -d '^\.' -d '\.git' \
+				 -d '(submodules|venv|python-reqs|init)' \
+				 -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
+				 $(word 2,$^) > $@
 
 fig/Makefile.reduced.png: res/Makefile.reduced.dot
-	dot -Tpng -Grankdir=BT < $^ > $@
+	dot -Tpng -Grankdir=BT -Nshape=plaintext < $^ > $@
 
 # =================
 #  Cleanup {{{1
