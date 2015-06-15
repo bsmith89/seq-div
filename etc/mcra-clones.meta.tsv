@@ -86,8 +86,8 @@ seq_id	subject	sample	pcr_rep	clone	seq_rep	suspect	archive
 2493918.M13REV	U030	1	1	E05	1	False	2015-06-09_mcrA-clones
 2493919.M13REV	U030	1	1	F01	1	False	2015-06-09_mcrA-clones
 2493920.M13REV	U030	1	1	F04	1	False	2015-06-09_mcrA-clones
-2493922.M13REV	U030	1	1	G01a	1	False	2015-06-09_mcrA-clones
-2493922.M13REVb	U030	1	1	G01b	1	False	2015-06-09_mcrA-clones
+2493922.M13REV	U030	1	1	G01	1	False	2015-06-09_mcrA-clones
+2493922.M13REVb	U030	1	1	G01	2	False	2015-06-09_mcrA-clones
 2493923.M13REV	U030	1	1	G02	1	False	2015-06-09_mcrA-clones
 2493924.M13REV	U030	1	1	G03	1	False	2015-06-09_mcrA-clones
 2493925.M13REV	U030	1	1	G04	1	False	2015-06-09_mcrA-clones
