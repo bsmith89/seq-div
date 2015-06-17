@@ -129,7 +129,9 @@ to make the changes that I did.
 I _can_ commit my alignment to the repository, but this is a relatively
 downstream file in my analysis.
 
-## Primer Selection for Methanogen Phylogenetic Marker Libraries ##
+## _mcrA_ Primer Design ##
+
+### Identifying Conserved Regions ###
 
 (date: 2015-04-08)
 
@@ -154,7 +156,7 @@ These primers are from Luton 2002:
 I took a stab at designing my own primers. See `ipynb/primers.ipynb`.
 The first result was this figure:
 
-![Inferences about potential primers from an _mcrA_ alignment.](static/2015-04-08.primer_design.png)
+![Inferences about potential primers from an _mcrA_ alignment.](static/2015-04-08.primer_design0.png)
 
 Here we see that there are regions at approximately 550, 1100, 1500, and 1550
 where a 15 base primer could have a degeneracy of less than 100 (ignoring
@@ -164,7 +166,7 @@ As a potentially easier task, primers were designed for the two
 branches separated by the the deepest split in
 the phylogenetic tree with 82 and 61 taxa represented, respectively.
 
-![Finding primer sites in two clades of _mcrA_.](static/2015-04-08.primer_design2.png)
+![Finding primer sites in two clades of _mcrA_.](static/2015-04-08.primer_design1.png)
 
 This was done by hand with an attempt to keep degeneracy below 100, primer
 lengths of ~20 bases, and ignoring sequence variants at a position with fewer
@@ -206,6 +208,256 @@ Diversity is measured as the total branch length of the tree hit by the
 primers.
 It would be nice to include imperfect matches, but weight the results by the
 quality of the match.
+
+(date: 2015-06-16)
+
+I've gone ahead and actually designed some primers (largely by hand) against
+the full diversity of mcrA.
+While I _could_ exclude some portions of the tree, the inclusion of
+_Methanomasilliicoccus_ already gives us a ton of sequence diversity, so I'll
+start with the full tree.
+
+The process of designing these primers started with identifying regions of
+the gene which were highly conserved.
+
+![Entropy of amino acid sequence along a portion of mcrA.](static/2015-06-16.primer_design0.png)
+
+This figure is based on `seq/mcra-refs.afa`.
+Areas of low entropy along the gene are highlighted.
+The four regions of perfect (or mostly perfect) sequence conservation are
+(0-indexed):
+
+1. \[360, 369)
+2. \[442, 448)
+3. \[493, 500)
+   ^[includes two positions with multiple AAs, although entropy is low.]
+4. \[520, 531)
+
+
+### Optimizing Primers and Amplicons ###
+
+I will call each of these portions of the MSA with particularly low entropy
+a "motif".
+I _believe_ the first and last motif correspond to the forward and reverse
+Luton primers [@Luton2002] but I may be mistaken. (TODO).
+I'd like a few different things from a prospective amplicon: short enough
+for paired ends to fully overlap (around 200bp) to increase base-calling
+accuracy, but still with enough internal entropy to identify strain level
+variation.
+Alternatively, optimal length for qPCR (the shorter the better, to a point), in
+which case sequence entropy doesn't matter.
+
+The amplicon that would be formed between the first and second motif
+(which I'll call 'amp1,2') would be ~90 amino acid residues, i.e. 270bp.
+Too long for sequencing, maybe, but better for qPCR.
+Amp2,3 would be ~180bp (perfect for Illumina); entropy is lower, however.
+Amp1,3 is clearly too long.
+Amp2,4 is almost exactly the same size as amp1,2 (too long).
+Amp3,4 is _short_ at 120bp, and has lower entropy, but might be great for qPCR.
+
+The usability of each motif for primers is influenced by the degeneracy of
+the genetic code for each amino acid.  Here I define degeneracy as the
+number of 3-base sequences needed to exhaustively cover all possible codons.
+For instance, `Q` (Glutamine) has the degenerate codon `caR`
+(`R` is the
+[IUPACAmbiguousDNA](http://www.boekhoff.info/?pid=data&dat=fasta-codes)
+letter for  stands for "purine": `A` or `G`) and has a degeneracy of 2.
+Both `M` (Met/Methionine) and `W` (Trp/Tryptophan) have just one codon each.
+On the opposite end of the spectrum, Serine (`S`) has `TCT`, `TCC`, `TCA`,
+`TCG`, `AGT`, and `AGC`, and it's ambiguous codon can be written `WSN`:
+a degeneracy of 16.
+
+Observe:
+```
+Motif 1:  Y  M  S  G  G  V  G  F  T
+          2  1  16 4  4  4  4  2  4
+
+Motif 2:  F  G  G  S  Q  R
+          2  4  4  16 2  8
+
+Motif 3:  D  L  Q  D  Q  C  G
+          2  8  2  2  2  2  4
+
+Motif 4:  N  Y  P  N  Y  A  M  N  V  G  H
+          2  2  4  2  2  4  1  2  4  4  2
+```
+
+A codon placed at the 3' end of the primer can be truncated to only its
+first and second positions, meaning that the more degenerate 3rd position
+can be ignored.
+Although less useful, the first position of a codon at the 5' end can also be
+truncated.
+
+Notice the super high degeneracy of the `S` and `R` codons in motif 2.
+Combined with the moderately high degeneracy of `G`, this motif has three
+4-mers: `FGGS` (degeneracy: 512, excluding the 3' wobble position on the last
+codon), `GGSQ` (dgn: 512), and `GSQR` (dgn: 1024).
+Therefore, despite high amino acid conservation, there won't be any good
+primers to be found in this motif.
+The reverse direction is not much different.
+I'll ignore motif #2 from this point forward.
+
+Here I define an AA K-mer's degeneracy as the degeneracy of the nucleotide
+oligomers needed to match all possible codons, truncating the final, 3'
+nucleotide if "forward" or the first 5' nucleotide if "reverse".
+Some of the best 4-mers are in the following table, which is not exhaustive.
+
+| motif | direction | 4-mer         | degeneracy |
+| ----- | --------- | ------------- | ---------- |
+| 1     | foward       | **YMSG** | 32         |
+| 1     | foward       | VGFT          | 32         |
+| 3     | foward       | DLQD \*       | 32         |
+| 3     | foward       | **LQDQ** | 32         |
+| 3     | foward       | QDQC &dagger; | 8          |
+| 3     | foward       | DQCG &dagger; | 8          |
+| 3     | reverse       | **LQDQ** | 32         |
+| 3     | reverse       | QDQC &dagger; | 16         |
+| 4     | reverse       | NYAM          | 16         |
+| 4     | reverse       | **YAMN** | 16         |
+| 4     | reverse       | AMNV          | 32         |
+
+| \* One reference sequence has `A` instead of the first `D`.
+| &dagger; One reference sequence has `A` instead of `C`.
+| Sequences in **bold** were selected for primer design.
+
+
+Having somewhat arbitrarily selected my "conserved amino acid motif" to form
+the 11 base (12 - one 3' position) "degenerate core" of my CODEHOP primer
+[@Staheli2011], I'll go on to grab the consensus nucleotide sequence for the
+upstream (5') clamp region for each.
+
+The result:
+
+```
+Name       Consensus Clamp           Degenerate Core
+--------   ------------------------  ----------------
+mcrA1_f_0: 5' GACCAGATCTGGCTCGGATCA  TAYATGWSNGG  3'
+mcrA3_f_0: 5' CTCGGATTCTACGGTTACGACC  TNCARGAYCA  3'
+mcrA3_r_0: 5' GAATGAGTTTGCTGCACCACAC  TGRTCYTGNA  3'
+mcrA4_r_0: 5' GTATTCTCCCTGGTGACCGACG  TTCATNGCRTA 3'
+
+```
+
+[Analysis](https://www.idtdna.com/calc/analyzer)
+at 0.25 uM [Oligo], 50 mM [Na+], 0 mM [Mg++], 0 mM [dNTPs]:
+
+primer | length | degen. | min($T_m$) | mean($T_m$) | max($T_m$) | notes |
+------ | ------ | ---------- | ---------- | ----------- | ---------- | ----- |
+mcrA1_f_0 | 32 | 32 | 61.8 | 63.7 | 65.6 | 10 base homodimer near the 5' end |
+mcrA1_f_1 | 30 | 32 | 60.7 | 62.8 | 64.9 | removed 2 bases from the 5' end |
+mcrA3_f_0 | 32 | 16 | 61.5 | 63.8 | 66.2 | 8 base homodimer near the 3' end |
+mcrA3_f_1 | 30 | 16 | 60.5 | 63.0 | 65.6 | 2 bases from 5' end |
+mcrA3_r_0 | 32 | 16 | 61.8 | 64.1 | 66.5 | |
+mcrA3_r_1 | 27 | 16 | 60.4 | 63.3 | 66.2 | 5 bases from 5' end
+mcrA4_r_0 | 32 | 8  | 63.1 | 64.8 | 66.2 | |
+mcrA4_r_1 | 25 | 8  | 60.2 | 62.5 | 64.5 | 7 bases from 5' end
+
+The results are promising.
+I'm able to design primers for each of the regions which may just do the trick.
+
+Also consider adding bases like 2’-deoxyInosine (/ideoxyI/), a universal
+base, which will do two things: it'll increase the stability of not-quite-matching
+base-pairs anywhere along the sequence
+(although, if I'm not going to add it to the 3rd codon positions everywhere,
+what's the point),
+and it'll increase reproducibility of my oligos, since degenerate positions
+will not be some undefined composition.
+A superior, but more expensive alternative is 5-Nitroindole (/i5NitInd/),
+which adds more than $100 to the price of oligos, but which matches in a much
+less biased manner.
+
+
+#### Primer Binding Sites ####
+
+
+mcrA1:
+
+```
+                          Sequence        Consensus Clamp       Degen. Core
+----------------------------------        --------------------- -----------
+
+                 PRIMER: mcrA1_f_0        GACCAGATCTGGCTCGGATCA TAYATGWSNGG
+
+                                               *  *   * *  *  *
+ Methanobrevibacter_smithii_clade1   TATACGACCAAATTTGGTTAGGTTCT TACATGTCTGGTGG
+
+                                               *      * *  *  *
+ Methanobrevibacter_smithii_clade2   TTTACGACCAAATCTGGTTAGGTTCT TACATGTCTGGTGG
+
+                                               ** *   * *  *
+         Methanosphaera_stadtmanae   TATACGACCAAGTATGGTTAGGTTCA TACATGTCTGGTGG
+
+                                            *     * **  *  *
+Methanomassiliicoccus_intestinalis   TCTTCGATCAGATTTACCTTGGATCA TACATGTCTGGTGG
+
+                                                              *
+        Methanosarcina_acetivorans   TCTACGACCAGATCTGGCTCGGATCC TACATGTCCGGTGG
+
+                                                           *  *
+         Methanoculleus_bourgensis   TCTACGACCAGATCTGGCTCGGCTCC TACATGTCCGGCGG
+
+```
+
+mcrA3:
+```
+        Sequence    Fwd Consensus Clamp    Degen. Core   Rvs Consensus Clamp
+----------------    ---------------------- ----------- ---------------------
+
+      mcrA3_f_0     CTCGGATTCTACGGTTACGACC TNCARGAYCA
+      mcrA3_r_0'                           TNCARGAYCA GTGTGGTGCAGCAAACTCATTC
+
+                    * *  *        *     **
+M_smithii_clade1  GATTAGGTTTCTACGGATACGATT TACAAGATCA ATGTGGTGCAGCTAACGTATTCTC
+                                                      *           *   **
+
+                    * *                 **
+M_smithii_clade2  GATTAGGATTCTACGGTTACGATT TACAAGATCA ATGTGGTGCAGCTAACGTATTCTC
+                                                      *           *   **
+
+                    * *        *         *
+    M_stadtmanae  GATTAGGATTCTATGGTTACGACT TACAAGATCA ATGTGGATCATCCAACTCACTCTC
+                                                      *     **  * *      *
+
+                               *  *      *
+  M_intestinalis  GTCTCGGATTCTATGGATACGACT TACAGGATCA GTGCGGTTCTGCTAACTCATTCTC
+                                                         *   * *  *
+
+                         *    *     *
+   M_acetivorans  GCCTCGGCTTCTTCGGTTTCGACC TGCAGGACCA GTGTGGTGCCACAAACGTTCTGTC
+                                                               **     **** *
+
+                         *    *   *
+    M_bourgensis  GTCTCGGCTTCTTCGGCTACGACC TCCAGGACCA GTGCGGGTCTGCAAACTCGCTCTC
+                                                         *  ** *        **
+
+```
+
+mcrA4:
+```
+                          Sequence      Degen. Core    Rvs Consensus Clamp
+----------------------------------      ----------- ----------------------
+
+      PRIMER COMPLEMENT: mcrA4_r_0      TAYGCNATGAA CGTCGGTCACCAGGGAGAATAC
+
+ Methanobrevibacter_smithii_clade1   AACTACGCAATGAA CGTAGGTCACCAAGGTGAATACGCTG
+                                                       *        *  *
+
+ Methanobrevibacter_smithii_clade2   AACTACGCAATGAA CGTAGGTCACCAAGGTGAATACGCTG
+                                                       *        *  *
+
+         Methanosphaera_stadtmanae   AACTACGCAATGAA CGTAGGTCACCAACCTGAATATGCAG
+                                                       *        ****     *
+
+Methanomassiliicoccus_intestinalis   AACTATGCAATGAA CGTTGGTCACCTTTGCGGTTACGCTG
+                                                       *       *** * **
+
+        Methanosarcina_acetivorans   AACTACGCAATGAA CGTCGGTCACCAGGGCGGATACGCAG
+                                                                   * *
+
+         Methanoculleus_bourgensis   AACTACGCGATGAA CGTCGGTCACCAGGGCGAGTACGCCG
+                                                                   *  *
+
+```
 
 ## Clone Library Sequence Analysis ##
 (date: 2015-04-28)
@@ -252,7 +504,7 @@ The two mutations are non-synonymous.
 ![Check out this sweet tree!  (Color-coded by subject.)](static/2015-05-19_tree.png)
 
 
-### Things to present at lab meeting ###
+Things to present at lab meeting:
 
 1.  Two species of mcrA possessing organisms in the human gut
 2.  Two clades of _smithii_.
@@ -269,15 +521,23 @@ The two mutations are non-synonymous.
     D.  Chimeras
     E.  Primer bias/limitation
 
-### Possible experimental design ###
+Possible experimental design:
 
  -  Design primers that will work for full-overlap paired ends Illumina
  -  Two independent PCR runs for each sample
      -  Only consider sequences which appear in both runs
 
 (date: 2015-05-12)
+
 TODO: I need to see if the separation of M. smithii into two clades is also
 visible in 16S sequence.
+
+(date: 2015-06-16)
+
+Now that I've collected clones from a number of subjects, I feel like there's
+more that can be said.
+
+![Phylogenetic tree of all clones, and references.](static/2015-06-16.clone_diversity.png)
 
 
 # Appendices #
