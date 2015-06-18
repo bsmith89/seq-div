@@ -85,8 +85,9 @@ def get_amplicon(rec, hits):
         out_rec = out_rec[:0]
         return out_rec, None
     trim_start = hit_info['start'] + hit_info['len_start']
-    trim_stop = hit_info['stop'] - hit_info['len_stop']
-    out_rec = out_rec[trim_start:trim_stop]
+    # TODO: Check this math?
+    trim_stop = hit_info['stop'] + hit_info['len_stop'] - 1
+    out_rec = out_rec[trim_start:len(out_rec) - trim_stop]
     if hit_info['primer_start'] == 'reverse':
         id, description = out_rec.id, out_rec.description
         out_rec = out_rec.reverse_complement()

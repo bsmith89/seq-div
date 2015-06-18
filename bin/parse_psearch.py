@@ -37,12 +37,15 @@ def parse_primer_sets(handle):
 def extract_info(amplicon, primers):
     name = amplicon.seq_id
     length = amplicon.length
+    primer_start, primer_stop = None, None
     for primer in amplicon.binding_sites:
         index, mismatches = amplicon.binding_sites[primer]
-        if index > 0:
-            start, mis_start, primer_start = index, mismatches, primer
-        elif index < 0:
-            stop, mis_stop, primer_stop = index, mismatches, primer
+        if index[0] != '[':  # PrimerSearch notation for the complementary strand
+            start, mis_start, primer_start = int(index) - 1, mismatches, primer
+        elif index[0] == '[':
+            stop, mis_stop, primer_stop = int(index[1:-1]), mismatches, primer
+    if not primer_start and primer_stop:
+        print(primer)
     primer_start = psearch_primer_to_iupac(primer_start)
     primer_stop = psearch_primer_to_iupac(primer_stop)
     primer_start_len = len(primer_start)
