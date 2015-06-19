@@ -113,7 +113,8 @@ docs:
 figs:
 res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
      tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk \
-     tre/mcra-refs.gb.nucl.nwk
+     tre/mcra-refs.gb.nucl.nwk \
+     tre/ribo-refs.gb.nucl.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
@@ -222,17 +223,46 @@ seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
 
-meta/mcra-refs.list: etc/mcra-refs.names.tsv
+meta/mcra-refs.names.tsv: etc/refs.meta.tsv
+	awk '$$3 ~ /^mcrA$$/ {print $$1"\t"$$2"_"$$1}' $^ > $@
+
+meta/rrs-refs.names.tsv: etc/refs.meta.tsv
+	awk '$$3 ~ /^rrs$$/ {print $$1"\t"$$2"_"$$1}' $^ > $@
+
+meta/mcra-refs.list: meta/mcra-refs.names.tsv
 	cut -f2 $^ > $@
 
-seq/mcra-refs.fn: bin/utils/rename_seqs.py etc/mcra-refs.names.tsv raw/mcra.published.fn \
-			 bin/utils/fetch_seqs.py meta/mcra-refs.list
+meta/rrs-refs.list: meta/rrs-refs.names.tsv
+	cut -f2 $^ > $@
+
+# De-redundant-ed references (mcra-refs.names.tsv isn't exhaustive).
+seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
+                  raw/mcra.published.fn \
+                  bin/utils/fetch_seqs.py meta/mcra-refs.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) > $@
 
-seq/mcra-refs2.fn: bin/utils/rename_seqs.py etc/mcra-refs.names.tsv raw/mcra.published.fn \
-			  bin/utils/fetch_seqs.py etc/mcra-refs.reduced.list
+# Very reduced subset of reference sequences which guide interpretation of
+# my clone libraries.
+seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
+                   raw/mcra.published.fn \
+                   bin/utils/fetch_seqs.py meta/mcra-refs.reduced.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
+		| $(word 4,$^) $(word 5,$^) > $@
+
+# mcrA reference sequences with a matching 16S reference
+seq/mcra-refs3.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
+                   raw/mcra.published.fn \
+                   bin/utils/fetch_seqs.py meta/rrs-refs.list
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
+		| $(word 4,$^) $(word 5,$^) > $@
+
+# All 16S references
+seq/rrs-refs3.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
+                  raw/rrs.published.fn \
+                  bin/utils/fetch_seqs.py meta/rrs-refs.list
+	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
+		| tee test.out \
 		| $(word 4,$^) $(word 5,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
@@ -298,6 +328,20 @@ seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
 		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
 		| muscle -refine \
 		> $@
+
+raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
+	curl -o $@ http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
+
+seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
+	tar -xzf $^ -C ${<D}
+	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
+
+# ribo_sina_db.arb doesn't exist yet, I need to download it from
+# http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
+# but it's about 0.5GB
+seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
+	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA -i $(word, 2,$^) -o $@
+
 
 seq/%.afa: seq/%.fa
 	muscle < $^ > $@
