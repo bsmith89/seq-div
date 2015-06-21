@@ -250,19 +250,12 @@ seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) > $@
 
-# mcrA reference sequences with a matching 16S reference
-seq/mcra-refs3.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
-                   raw/mcra.published.fn \
-                   bin/utils/fetch_seqs.py meta/rrs-refs.list
-	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) > $@
-
 # All 16S references
-seq/rrs-refs3.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
-                  raw/rrs.published.fn \
-                  bin/utils/fetch_seqs.py meta/rrs-refs.list
+# rrs-refs3 is a synonym for rrs-refs
+seq/rrs-refs.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
+                 raw/rrs.published.fn \
+                 bin/utils/fetch_seqs.py meta/rrs-refs.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| tee test.out \
 		| $(word 4,$^) $(word 5,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
@@ -323,6 +316,9 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 # Basically anything that *could* go into the paper as a table.
 
 # Align {{{2
+
+# refinement can't handle hmmalign output where the sequence just doesn't
+# match the model at all.
 seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
 	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
 		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
@@ -336,11 +332,13 @@ seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
 	tar -xzf $^ -C ${<D}
 	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
 
-# ribo_sina_db.arb doesn't exist yet, I need to download it from
-# http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
-# but it's about 0.5GB
-seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
-	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA -i $(word, 2,$^) -o $@
+# # ribo_sina_db.arb doesn't exist yet, I need to download it from
+# # http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
+# # but it's about 0.5GB
+# seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
+# 	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA -i $(word, 2,$^) -o $@
+seq/rrs-%.afn: seq/rrs-%.fn
+	muscle < $^ > $@
 
 
 seq/%.afa: seq/%.fa
@@ -350,6 +348,7 @@ seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
 
 # Gblocks {{{2
+# gblocks can't handle sequence names longer than 72 characters
 # gblocks always throws an error code of 1
 seq/%.gb.afn res/%.gb.html: seq/%.afn
 	Gblocks $^ -t=c -p=y -v=150 || [ $$? == 1 ]
