@@ -232,10 +232,13 @@ meta/%-refs.names.tsv: meta/%-refs.annot.tsv
 meta/%-refs.list: meta/%-refs.names.tsv
 	cut -f2 $^ > $@
 
+meta/%-refs.suspect.list: meta/%-refs.annot.tsv
+	awk '$$4 == "$*" && $$6 == "True" {print $$1}' $^ > $@
+
 # De-redundant-ed references (mcra-refs.names.tsv isn't exhaustive).
 seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                   raw/mcra.published.fn \
-                  bin/utils/fetch_seqs.py meta/mcra-refs.list
+                  bin/utils/drop_seqs.py meta/mcra-refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
 		| $(word 4,$^) $(word 5,$^) > $@
 
@@ -322,7 +325,7 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
 	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
 		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
-		| muscle -refine \
+		| muscle -quiet -refine \
 		> $@
 
 raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
@@ -338,11 +341,11 @@ seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
 # seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
 # 	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA -i $(word, 2,$^) -o $@
 seq/rrs-%.afn: seq/rrs-%.fn
-	muscle < $^ > $@
+	muscle -quiet < $^ > $@
 
 
 seq/%.afa: seq/%.fa
-	muscle < $^ > $@
+	muscle -quiet < $^ > $@
 
 seq/%.afn: bin/utils/codonalign.py seq/%.afa seq/%.frame.fn
 	$^ > $@
@@ -363,10 +366,10 @@ seq/%.gb.afa: seq/%.afa
 # =======================
 # Trees {{{2
 tre/%.nucl.nwk: seq/%.afn
-	fasttree -nt $^ > $@
+	FastTree -quiet -nt $^ > $@
 
 tre/%.prot.nwk: seq/%.afa
-	fasttree < $^ > $@
+	FastTree -quiet < $^ > $@
 
 # ==================
 #  Graphing {{{1
