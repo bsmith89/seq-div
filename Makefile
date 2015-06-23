@@ -113,8 +113,8 @@ docs:
 figs:
 res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
      tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk \
-     tre/mcra-refs.gb.nucl.nwk \
-     tre/ribo-refs.gb.nucl.nwk
+     tre/mcra-refs.gb.prot.nwk \
+     tre/rrs-refs.gb.nucl.nwk
 
 # What files are generated on `make all`?
 all: docs figs res
@@ -204,12 +204,11 @@ raw/mcra-clones.all.fastq.mk: meta/mcra-clones.names.tsv
 raw/mcra-clones.all.fastq:
 	cat $^ > $@
 
-meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
-	awk '{print $$2 "\t" $$1}' $^ \
-		| sed '1,1d' > $@
-
 meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "\t" $$0 }' $^ > $@
+
+meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
+	sed '1,1d' $^ | awk '{print $$2"\t"$$1}' > $@
 
 
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
@@ -223,16 +222,14 @@ seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
 
-meta/mcra-refs.names.tsv: etc/refs.meta.tsv
-	awk '$$3 ~ /^mcrA$$/ {print $$1"\t"$$2"_"$$1}' $^ > $@
+# TODO: Why can't I import these annotations into FigTree?
+meta/%-refs.annot.tsv: etc/refs.meta.tsv
+	awk '$$3 == "$*" || NR == 1 {print $$2"."$$1"\t"$$0}' $^ > $@
 
-meta/rrs-refs.names.tsv: etc/refs.meta.tsv
-	awk '$$3 ~ /^rrs$$/ {print $$1"\t"$$2"_"$$1}' $^ > $@
+meta/%-refs.names.tsv: meta/%-refs.annot.tsv
+	sed '1,1d' $^ | awk '{print $$2"\t"$$1}' > $@
 
-meta/mcra-refs.list: meta/mcra-refs.names.tsv
-	cut -f2 $^ > $@
-
-meta/rrs-refs.list: meta/rrs-refs.names.tsv
+meta/%-refs.list: meta/%-refs.names.tsv
 	cut -f2 $^ > $@
 
 # De-redundant-ed references (mcra-refs.names.tsv isn't exhaustive).
@@ -244,6 +241,9 @@ seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
 
 # Very reduced subset of reference sequences which guide interpretation of
 # my clone libraries.
+meta/%-refs.reduced.list: meta/%-refs.annot.tsv
+	awk '$$4 == "$*" && $$5 == "TRUE"' $^ | cut -f1 > $@
+
 seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                    raw/mcra.published.fn \
                    bin/utils/fetch_seqs.py meta/mcra-refs.reduced.list

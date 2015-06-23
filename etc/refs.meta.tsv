@@ -1,142 +1,142 @@
-gene_id	genome	gene_product
-650752390	Methanobacterium_AL-21	mcrA
-650750471	Methanobacterium_AL-21	mcrA
-2516847513	Methanobacterium_Maddingley	mcrA
-2516847065	Methanobacterium_Maddingley	mcrA
-2585047995	Methanobacterium_SMA-27	mcrA
-650872422	Methanobacterium_SWAN-1	mcrA
-2574443412	Methanobacterium_arcticum	mcrA
-2574441742	Methanobacterium_arcticum	mcrA
-2520803234	Methanobacterium_formicicum_2	mcrA
-2520801411	Methanobacterium_formicicum_2	mcrA
-2583187982	Methanobacterium_veterum_1	mcrA
-2583185460	Methanobacterium_veterum_1	mcrA
-2540854716	Methanobrevibacter_AbM4	mcrA
-2553937573	Methanobrevibacter_JH1	mcrA
-2595205126	Methanobrevibacter_millerae	mcrA
-2595203960	Methanobrevibacter_millerae	mcrA
-2595158363	Methanobrevibacter_olleyae	mcrA
-2595158117	Methanobrevibacter_olleyae	mcrA
-646533023	Methanobrevibacter_ruminantium	mcrA
-2547234354	Methanobrevibacter_smithii_2	mcrA
-640592823	Methanobrevibacter_smithii_1	mcrA
-640592705	Methanobrevibacter_smithii_1	mcrA
-2558933934	Methanobrevibacter_wolinii	mcrA
-646622935	Methanocaldococcus_FS406	mcrA
-646623830	Methanocaldococcus_FS406	mcrA
-644970377	Methanocaldococcus_fervens	mcrA
-646777089	Methanocaldococcus_infernus	mcrA
-638202197	Methanocaldococcus_jannaschii	mcrA
-638201361	Methanocaldococcus_jannaschii	mcrA
-2556226606	Methanocaldococcus_villosus_1	mcrA
-646367708	Methanocaldococcus_vulcanius	mcrA
-646366661	Methanocaldococcus_vulcanius	mcrA
-2505968448	Methanocella_RC-I	mcrA
-2512783668	Methanocella_conradii	mcrA
-2505971857	Methanocella_paludicola	mcrA
-637960147	Methanococcoides_burtonii	mcrA
-640788680	Methanococcus_aeolicus	mcrA
-2563557513	Methanococcus_maripaludis_1	mcrA
-641283602	Methanococcus_maripaludis_2	mcrA
-640793336	Methanococcus_maripaludis_3	mcrA
-640165512	Methanococcus_maripaludis_4	mcrA
-640786544	Methanococcus_vannielii	mcrA
-646859549	Methanococcus_voltae	mcrA
-2525335778	Methanocorpusculum_bavaricum	mcrA
-2525334810	Methanocorpusculum_bavaricum	mcrA
-640100248	Methanocorpusculum_labreanum	mcrA
-640099739	Methanocorpusculum_labreanum	mcrA
-2579682478	Methanoculleus_MH98A	mcrA
-2579682448	Methanoculleus_MH98A	mcrA
-2540643958	Methanoculleus_bourgensis	mcrA
-2540643737	Methanoculleus_bourgensis	mcrA
-640115295	Methanoculleus_marisnigri	mcrA
-640115052	Methanoculleus_marisnigri	mcrA
-2518787893	Methanoflorens_stordalenmirensis	mcrA
-648055573	Methanohalobium_evestigatum	mcrA
-646706666	Methanohalophilus_mahii	mcrA
-2507462304	Methanolinea_tarda	mcrA
-2519472088	Methanolobus_psychrophilus	mcrA
-2515107634	Methanolobus_tindarius	mcrA
-2555938320	Methanomassiliicoccus_intestinalis	mcrA
-2540666849	Methanomethylophilus_alvus	mcrA
-2509663319	Methanomethylovorans_hollandica	mcrA
-2574178758	Methanomicrobium_mobile	mcrA
-2506476786	Methanoplanus_limicola	mcrA
-648195418	Methanoplanus_petrolearius	mcrA
-648194984	Methanoplanus_petrolearius	mcrA
-2609087587	Methanoplasma_termitum	mcrA
-638168675	Methanopyrus_kandleri_1	mcrA
-640867801	Methanoregula_boonei	mcrA
-2509039570	Methanoregula_formicicum	mcrA
-2509037835	Methanoregula_formicicum	mcrA
-650797088	Methanosaeta_concilii	mcrA
-2512008957	Methanosaeta_harundinacea	mcrA
-639699575	Methanosaeta_thermophila	mcrA
-2502870849	Methanosalsum_zhilinae	mcrA
-2596415081	Methanosarcina_DSM_11855	mcrA
-2578262050	Methanosarcina_SMA-21	mcrA
-2607330015	Methanosarcina_acetivorans	mcrA
-2607632158	Methanosarcina_barkeri	mcrA
-638165755	Methanosarcina_mazei_Goe1	mcrA
-2540563143	Methanosarcina_mazei_Tuc01	mcrA
-2515321874	Methanosarcinales_sp_uncultured	mcrA
-637846211	Methanosphaera_stadtmanae_1	mcrA
-643570914	Methanosphaerula_palustris	mcrA
-637897753	Methanospirillum_hungatei	mcrA
-648151981	Methanothermobacter_marburgensis	mcrA
-648151945	Methanothermobacter_marburgensis	mcrA
-2607440748	Methanothermobacter_thermautotrophicus	mcrA
-2607440713	Methanothermobacter_thermautotrophicus	mcrA
-650917784	Methanothermococcus_okinawensis	mcrA
-2519842728	Methanothermococcus_thermolithotrophicus	mcrA
-2519841469	Methanothermococcus_thermolithotrophicus	mcrA
-649738388	Methanothermus_fervidus	mcrA
-649738338	Methanothermus_fervidus	mcrA
-2506713669	Methanotorris_formicicus	mcrA
-2506713165	Methanotorris_formicicus	mcrA
-650856936	Methanotorris_igneus	mcrA
-650856136	Methanotorris_igneus	mcrA
-2565995260	Methermicoccus_shengliensis	mcrA
-2566125579	Methanoperedens_nitroreducens_ANME-2a2	mcrA
-2505380168	Methanoperedens_nitroreducens_ANME-2d	mcrA
-650751642	Methanobacterium_AL-21	rrs
-650872250	Methanobacterium_SWAN-1	rrs
-2540854610	Methanobrevibacter_AbM4	rrs
-646532657	Methanobrevibacter_ruminantium	rrs
-640592334	Methanobrevibacter_smithii_1	rrs
-646623979	Methanocaldococcus_FS406	rrs
-644970514	Methanocaldococcus_fervens	rrs
-646778090	Methanocaldococcus_infernus	rrs
-646368077	Methanocaldococcus_vulcanius	rrs
-2512784513	Methanocella_conradii	rrs
-640714031	Methanococcoides_burtonii	rrs
-640788574	Methanococcus_aeolicus	rrs
-2563555949	Methanococcus_maripaludis_1	rrs
-641283432	Methanococcus_maripaludis_2	rrs
-640793569	Methanococcus_maripaludis_3	rrs
-640724534	Methanococcus_maripaludis_4	rrs
-640786911	Methanococcus_vannielii	rrs
-646859838	Methanococcus_voltae	rrs
-640723153	Methanocorpusculum_labreanum	rrs
-2540642752	Methanoculleus_bourgensis	rrs
-640723536	Methanoculleus_marisnigri	rrs
-648056367	Methanohalobium_evestigatum	rrs
-646708004	Methanohalophilus_mahii	rrs
-2519473834	Methanolobus_psychrophilus	rrs
-2555938244	Methanomassiliicoccus_intestinalis	rrs
-648195355	Methanoplanus_petrolearius	rrs
-2609088431	Methanoplasma_termitum	rrs
-640869426	Methanoregula_boonei	rrs
-650797260	Methanosaeta_concilii	rrs
-2512009200	Methanosaeta_harundinacea	rrs
-640719534	Methanosaeta_thermophila	rrs
-638166558	Methanosarcina_mazei_Goe1	rrs
-2540563956	Methanosarcina_mazei_Tuc01	rrs
-640711927	Methanosphaera_stadtmanae_1	rrs
-643570292	Methanosphaerula_palustris	rrs
-640712865	Methanospirillum_hungatei	rrs
-648150889	Methanothermobacter_marburgensis	rrs
-650917567	Methanothermococcus_okinawensis	rrs
-649738403	Methanothermus_fervidus	rrs
-650857082	Methanotorris_igneus	rrs
+gene_id	genome	gene_product	reduced
+650752390	Methanobacterium_AL-21	mcra	False
+650750471	Methanobacterium_AL-21	mcra	False
+2516847513	Methanobacterium_Maddingley	mcra	False
+2516847065	Methanobacterium_Maddingley	mcra	False
+2585047995	Methanobacterium_SMA-27	mcra	False
+650872422	Methanobacterium_SWAN-1	mcra	False
+2574443412	Methanobacterium_arcticum	mcra	False
+2574441742	Methanobacterium_arcticum	mcra	False
+2520803234	Methanobacterium_formicicum_2	mcra	False
+2520801411	Methanobacterium_formicicum_2	mcra	False
+2583187982	Methanobacterium_veterum_1	mcra	False
+2583185460	Methanobacterium_veterum_1	mcra	False
+2540854716	Methanobrevibacter_AbM4	mcra	False
+2553937573	Methanobrevibacter_JH1	mcra	False
+2595205126	Methanobrevibacter_millerae	mcra	False
+2595203960	Methanobrevibacter_millerae	mcra	False
+2595158363	Methanobrevibacter_olleyae	mcra	False
+2595158117	Methanobrevibacter_olleyae	mcra	False
+646533023	Methanobrevibacter_ruminantium	mcra	False
+2547234354	Methanobrevibacter_smithii_2	mcra	True
+640592823	Methanobrevibacter_smithii_1	mcra	True
+640592705	Methanobrevibacter_smithii_1	mcra	True
+2558933934	Methanobrevibacter_wolinii	mcra	False
+646622935	Methanocaldococcus_FS406	mcra	False
+646623830	Methanocaldococcus_FS406	mcra	False
+644970377	Methanocaldococcus_fervens	mcra	False
+646777089	Methanocaldococcus_infernus	mcra	False
+638202197	Methanocaldococcus_jannaschii	mcra	False
+638201361	Methanocaldococcus_jannaschii	mcra	False
+2556226606	Methanocaldococcus_villosus_1	mcra	False
+646367708	Methanocaldococcus_vulcanius	mcra	False
+646366661	Methanocaldococcus_vulcanius	mcra	False
+2505968448	Methanocella_RC-I	mcra	False
+2512783668	Methanocella_conradii	mcra	False
+2505971857	Methanocella_paludicola	mcra	False
+637960147	Methanococcoides_burtonii	mcra	False
+640788680	Methanococcus_aeolicus	mcra	False
+2563557513	Methanococcus_maripaludis_1	mcra	False
+641283602	Methanococcus_maripaludis_2	mcra	False
+640793336	Methanococcus_maripaludis_3	mcra	False
+640165512	Methanococcus_maripaludis_4	mcra	False
+640786544	Methanococcus_vannielii	mcra	False
+646859549	Methanococcus_voltae	mcra	False
+2525335778	Methanocorpusculum_bavaricum	mcra	False
+2525334810	Methanocorpusculum_bavaricum	mcra	False
+640100248	Methanocorpusculum_labreanum	mcra	False
+640099739	Methanocorpusculum_labreanum	mcra	False
+2579682478	Methanoculleus_MH98A	mcra	False
+2579682448	Methanoculleus_MH98A	mcra	False
+2540643958	Methanoculleus_bourgensis	mcra	False
+2540643737	Methanoculleus_bourgensis	mcra	False
+640115295	Methanoculleus_marisnigri	mcra	False
+640115052	Methanoculleus_marisnigri	mcra	False
+2518787893	Methanoflorens_stordalenmirensis	mcra	False
+648055573	Methanohalobium_evestigatum	mcra	False
+646706666	Methanohalophilus_mahii	mcra	False
+2507462304	Methanolinea_tarda	mcra	False
+2519472088	Methanolobus_psychrophilus	mcra	False
+2515107634	Methanolobus_tindarius	mcra	False
+2555938320	Methanomassiliicoccus_intestinalis	mcra	True
+2540666849	Methanomethylophilus_alvus	mcra	False
+2509663319	Methanomethylovorans_hollandica	mcra	False
+2574178758	Methanomicrobium_mobile	mcra	False
+2506476786	Methanoplanus_limicola	mcra	False
+648195418	Methanoplanus_petrolearius	mcra	False
+648194984	Methanoplanus_petrolearius	mcra	False
+2609087587	Methanoplasma_termitum	mcra	False
+638168675	Methanopyrus_kandleri_1	mcra	False
+640867801	Methanoregula_boonei	mcra	False
+2509039570	Methanoregula_formicicum	mcra	False
+2509037835	Methanoregula_formicicum	mcra	False
+650797088	Methanosaeta_concilii	mcra	False
+2512008957	Methanosaeta_harundinacea	mcra	False
+639699575	Methanosaeta_thermophila	mcra	False
+2502870849	Methanosalsum_zhilinae	mcra	False
+2596415081	Methanosarcina_DSM_11855	mcra	False
+2578262050	Methanosarcina_SMA-21	mcra	False
+2607330015	Methanosarcina_acetivorans	mcra	False
+2607632158	Methanosarcina_barkeri	mcra	False
+638165755	Methanosarcina_mazei_Goe1	mcra	False
+2540563143	Methanosarcina_mazei_Tuc01	mcra	False
+2515321874	Methanosarcinales_sp_uncultured	mcra	False
+637846211	Methanosphaera_stadtmanae_1	mcra	True
+643570914	Methanosphaerula_palustris	mcra	False
+637897753	Methanospirillum_hungatei	mcra	False
+648151981	Methanothermobacter_marburgensis	mcra	False
+648151945	Methanothermobacter_marburgensis	mcra	False
+2607440748	Methanothermobacter_thermautotrophicus	mcra	False
+2607440713	Methanothermobacter_thermautotrophicus	mcra	False
+650917784	Methanothermococcus_okinawensis	mcra	False
+2519842728	Methanothermococcus_thermolithotrophicus	mcra	False
+2519841469	Methanothermococcus_thermolithotrophicus	mcra	False
+649738388	Methanothermus_fervidus	mcra	False
+649738338	Methanothermus_fervidus	mcra	False
+2506713669	Methanotorris_formicicus	mcra	False
+2506713165	Methanotorris_formicicus	mcra	False
+650856936	Methanotorris_igneus	mcra	False
+650856136	Methanotorris_igneus	mcra	False
+2565995260	Methermicoccus_shengliensis	mcra	False
+2566125579	Methanoperedens_nitroreducens_ANME-2a2	mcra	False
+2505380168	Methanoperedens_nitroreducens_ANME-2d	mcra	False
+650751642	Methanobacterium_AL-21	rrs	False
+650872250	Methanobacterium_SWAN-1	rrs	False
+2540854610	Methanobrevibacter_AbM4	rrs	False
+646532657	Methanobrevibacter_ruminantium	rrs	False
+640592334	Methanobrevibacter_smithii_1	rrs	True
+646623979	Methanocaldococcus_FS406	rrs	False
+644970514	Methanocaldococcus_fervens	rrs	False
+646778090	Methanocaldococcus_infernus	rrs	False
+646368077	Methanocaldococcus_vulcanius	rrs	False
+2512784513	Methanocella_conradii	rrs	False
+640714031	Methanococcoides_burtonii	rrs	False
+640788574	Methanococcus_aeolicus	rrs	False
+2563555949	Methanococcus_maripaludis_1	rrs	False
+641283432	Methanococcus_maripaludis_2	rrs	False
+640793569	Methanococcus_maripaludis_3	rrs	False
+640724534	Methanococcus_maripaludis_4	rrs	False
+640786911	Methanococcus_vannielii	rrs	False
+646859838	Methanococcus_voltae	rrs	False
+640723153	Methanocorpusculum_labreanum	rrs	False
+2540642752	Methanoculleus_bourgensis	rrs	False
+640723536	Methanoculleus_marisnigri	rrs	False
+648056367	Methanohalobium_evestigatum	rrs	False
+646708004	Methanohalophilus_mahii	rrs	False
+2519473834	Methanolobus_psychrophilus	rrs	False
+2555938244	Methanomassiliicoccus_intestinalis	rrs	True
+648195355	Methanoplanus_petrolearius	rrs	False
+2609088431	Methanoplasma_termitum	rrs	False
+640869426	Methanoregula_boonei	rrs	False
+650797260	Methanosaeta_concilii	rrs	False
+2512009200	Methanosaeta_harundinacea	rrs	False
+640719534	Methanosaeta_thermophila	rrs	False
+638166558	Methanosarcina_mazei_Goe1	rrs	False
+2540563956	Methanosarcina_mazei_Tuc01	rrs	False
+640711927	Methanosphaera_stadtmanae_1	rrs	True
+643570292	Methanosphaerula_palustris	rrs	False
+640712865	Methanospirillum_hungatei	rrs	False
+648150889	Methanothermobacter_marburgensis	rrs	False
+650917567	Methanothermococcus_okinawensis	rrs	False
+649738403	Methanothermus_fervidus	rrs	False
+650857082	Methanotorris_igneus	rrs	False
