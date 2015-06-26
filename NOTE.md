@@ -112,9 +112,9 @@ in phylogenetic coverage.
 Also, many of the sequences are fragments.
 To solve this problem, I would like to use an alignment of my own.
 How to make this alignment as high-quality as possible, is the question.
-One option is to start with an alignment to the FunGene model, then manually
-or automatically (`muscle -refine [...]`) refine that alignment and use that as the
-basis for a new alignment.
+One option is to start with an alignment to the FunGene model, then manually or
+automatically (`muscle -refine [...]`) refine that alignment and use that as
+the basis for a new alignment.
 Making this process reproducible is not currently possible, but my method
 for manually aligning sequences is pretty simple.
 I just find regions of
@@ -128,6 +128,34 @@ Unfortunately, there's no record of exactly what was changed and why I decided
 to make the changes that I did.
 I _can_ commit my alignment to the repository, but this is a relatively
 downstream file in my analysis.
+
+(date: 2015-06-23)
+
+I've collected 16S sequences from IMG as well, although the coverage from
+these archaea is pretty poor.
+From these I can create a methanogen 16S tree to compare to the mcrA tree.
+This has been done in the past, apparently, finding "high consistancy" [@TODO]
+which is why mcrA is used as a phylogenetic marker gene.
+I would like to know if the differences between the two mcrA clades are
+apparent at the 16S level.
+I doubt it, because 16S really shouldn't go down below species or genus
+level variation, but it's worth a shot.
+After messing with naming and the like for a long time, I get this:
+
+![](static/2015-06-23_rrs-tree.png)
+
+It's hard to pick out much from that tree, even comparing it to the a filled
+out mcrA tree:
+
+![](static/2015-06-23_mcra-tree.png)
+
+One problem is that there's not a ton of overlap between genomes which
+have an annotated _mcrA_ and those with _rrs_.
+It would appear that this must be due to a lack of 16S annotation in these
+genomes, since I picked the genomes based on the fact that they had a
+mcrA.
+I could try and pick out the 16S sequences my self, by BLASTing for them on
+IMG, or something like that.
 
 ## _mcrA_ Primer Design ##
 
