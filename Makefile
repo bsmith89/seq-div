@@ -287,14 +287,26 @@ res/%.psearch.tsv: bin/parse_psearch.py etc/primers.tsv res/%.psearch.out
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
 
-LUTON_FIND_AMPLICON_OPTS = --primer-set luton --max-mismatch 5
 # Re-orient the sequences to match the forward-reverse in etc/*.primers
 # and trim to within the primers
+# TODO: Should this be systematized somehow?  DRY.
 seq/%.luton-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
-	$(word 1,$^) ${LUTON_FIND_AMPLICON_OPTS} --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
+	$(word 1,$^) --primer-set luton --max-mismatch 5 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
 
 seq/%.luton-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-	$^ ${LUTON_FIND_AMPLICON_OPTS} --drop > $@
+	$(word 1,$^) --primer-set luton --max-mismatch 5 --trim-primers --drop $(word 2,$^) $(word 3,$^) > $@
+
+# Primers untrimmed for these (for now? TODO)
+seq/%.f3r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+	$(word 1,$^) --primer-set f3r4 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+
+seq/%.f1r3-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+	$(word 1,$^) --primer-set f1r3 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+
+seq/%.f1r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+	$(word 1,$^) --primer-set f1r4 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+
+
 
 # Quality trim {{{3
 

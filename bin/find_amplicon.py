@@ -64,6 +64,8 @@ def _get_extra_args():
     h.add_argument("--primer-set", type=str,
                    default=None,
                    help=("name of the primer set to use. DEFAULT: no consideration"))
+    h.add_argument("--trim-primers", action="store_true",
+                    help="include sequence region covered by primer hit.")
     return p
 
 
@@ -77,16 +79,19 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args
 
-def get_amplicon(rec, hits):
+def get_amplicon(rec, hits, trim_primers=False):
     out_rec = copy(rec)
     try:
         hit_info = get_hit_info(rec.id, hits)
     except NoHitsError as err:
         out_rec = out_rec[:0]
         return out_rec, None
-    trim_start = hit_info['start'] + hit_info['len_start']
-    # TODO: Check this math?
-    trim_stop = hit_info['stop'] + hit_info['len_stop'] - 1
+    if trim_primers:
+        trim_start = hit_info['start'] + hit_info['len_start']
+        trim_stop = hit_info['stop'] + hit_info['len_stop'] - 1
+    else:
+        trim_start = hit_info['start']
+        trim_stop = hit_info['stop'] - 1
     out_rec = out_rec[trim_start:len(out_rec) - trim_stop]
     if hit_info['primer_start'] == 'reverse':
         id, description = out_rec.id, out_rec.description
@@ -109,7 +114,8 @@ def main():
 
     recs = parse(args.in_handle, args.fmt_infile)
     for rec in recs:
-        amplicon, hit_info = get_amplicon(rec, hits)
+        amplicon, hit_info = get_amplicon(rec, hits,
+                                          trim_primers=args.trim_primers)
         logger.debug(hit_info)
         if (type(hit_info) == type(None)) and args.drop:
             warn(cli.DropSequenceWarning("No hit found for {rec.id}".format(rec=rec)))
