@@ -245,7 +245,7 @@ seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
 # Very reduced subset of reference sequences which guide interpretation of
 # my clone libraries.
 meta/%-refs.reduced.list: meta/%-refs.annot.tsv
-	awk '$$4 == "$*" && $$5 == "TRUE"' $^ | cut -f1 > $@
+	awk '$$4 == "$*" && $$5 == "True"' $^ | cut -f1 > $@
 
 seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                    raw/mcra.published.fn \
