@@ -165,11 +165,11 @@ raw/mcra.published.fn:
 
 # Unpacking and copying {{{3
 
-
 meta/archive-contents.tsv: etc/mcra-clones.meta.tsv
-	sed '1,1d' $< | awk '{print $$1 ".ab1\t" $$8}' > $@
+	awk 'NR > 1 {print $$1 ".ab1\t" $$8}' $^ > $@
 
-# Automatically generate archive.mk: rules for unpacking archived data files.
+# Automatically generate unarchive.mk: rules for unpacking archived data files.
+# Move this recipe into a shell script.
 raw/unarchive.mk: meta/archive-contents.tsv
 	@echo Generating $@...
 	@cat $^ | awk '{printf("raw/%s: raw/%s/%s\n\tcp $$^ $$@\n", $$1, $$2, $$1)}' > $@
@@ -208,12 +208,14 @@ meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "\t" $$0 }' $^ > $@
 
 meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
-	sed '1,1d' $^ | awk '{print $$2"\t"$$1}' > $@
+	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
 
+meta/mcra-clones.suspect.list: meta/mcra-clones.annot.tsv
+	awk '$$8 == "True" {print $$1}' $^ > $@
 
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
-				  bin/utils/drop_seqs.py etc/mcra-clones.suspect.list \
-				  bin/utils/rename_seqs.py meta/mcra-clones.names.tsv
+				  bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
+				  bin/utils/drop_seqs.py meta/mcra-clones.suspect.list
 	cat $(word 1,$^) \
 		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
 		| $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
@@ -227,7 +229,7 @@ meta/%-refs.annot.tsv: etc/refs.meta.tsv
 	awk '$$3 == "$*" || NR == 1 {print $$2"."$$1"\t"$$0}' $^ > $@
 
 meta/%-refs.names.tsv: meta/%-refs.annot.tsv
-	sed '1,1d' $^ | awk '{print $$2"\t"$$1}' > $@
+	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
 
 meta/%-refs.list: meta/%-refs.names.tsv
 	cut -f2 $^ > $@
@@ -347,11 +349,13 @@ seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
 	tar -xzf $^ -C ${<D}
 	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
 
-# # ribo_sina_db.arb doesn't exist yet, I need to download it from
-# # http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
-# # but it's about 0.5GB
+# ribo_sina_db.arb doesn't exist yet, I need to download it from
+# http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
+# but it's about 0.5GB
+# `sina` doesn't work on OSX
 seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
-	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA -i $(word, 2,$^) -o $@
+	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA \
+		-i $(word, 2,$^) -o $@
 
 seq/%.afa: seq/%.fa
 	muscle -quiet < $^ > $@
@@ -378,7 +382,7 @@ tre/%.nucl.nwk: seq/%.afn
 	FastTree -quiet -nt $^ > $@
 
 tre/%.prot.nwk: seq/%.afa
-	FastTree -quiet < $^ > $@
+	FastTree -quiet $^ > $@
 
 # ==================
 #  Graphing {{{1
@@ -395,7 +399,8 @@ ALL_DOCS_HTML = $(addsuffix .html,${ALL_DOCS})
 MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 %.html: %.md
-	pandoc -f markdown -t html5 -s --highlight-style pygments --mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
+	pandoc -f markdown -t html5 -s --highlight-style pygments \
+		--mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
 
 docs: ${ALL_DOCS_HTML} fig/Makefile.reduced.png
 
@@ -410,7 +415,7 @@ res/Makefile.dot: res/Makefile.complete
 	make_grapher.py -T $^ -o $@ >/dev/null
 
 res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
-	$(word 1,$^) -d '^raw/' -d '\.py$$' -d '^\.' -d '\.git' \
+	$(word 1,$^) -d '^raw/' -d '^bin/utils/' -d '^\.' -d '\.git' \
 				 -d '(submodules|venv|python-reqs|init)' \
 				 -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
 				 $(word 2,$^) > $@
