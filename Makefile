@@ -227,9 +227,6 @@ meta/%-refs.annot.tsv: etc/refs.meta.tsv
 meta/%-refs.names.tsv: meta/%-refs.annot.tsv
 	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
 
-meta/%-refs.list: meta/%-refs.names.tsv
-	cut -f2 $^ > $@
-
 meta/%-refs.suspect.list: meta/%-refs.annot.tsv
 	awk '$$4 == "$*" && $$6 == "True" {print $$1}' $^ > $@
 
@@ -317,10 +314,7 @@ seq/%.f1r3-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
 seq/%.f1r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
 	$(word 1,$^) --primer-set f1r4 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
 
-
-
 # Quality trim {{{3
-
 seq/%.qtrim.fastq: bin/qtrim_reads.py seq/%.fastq
 	$^ --drop -t fastq > $@
 
