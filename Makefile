@@ -166,7 +166,7 @@ raw/mcra.published.fn:
 # Unpacking and copying {{{3
 
 meta/archive-contents.tsv: etc/mcra-clones.meta.tsv
-	awk 'NR > 1 {print $$1 ".ab1\t" $$8}' $^ > $@
+	awk 'NR > 1 {print $$1 ".ab1\t" $$9}' $^ > $@
 
 # Automatically generate unarchive.mk: rules for unpacking archived data files.
 # Move this recipe into a shell script.
@@ -190,6 +190,7 @@ raw/fastq/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual | raw
 
 include raw/mcra-clones.all.fastq.mk
 # All pre-requisites for raw/mcra-clones.all.fastq
+# TODO: Remake this using awk, not shell-loops.
 raw/mcra-clones.all.fastq.mk: meta/mcra-clones.names.tsv
 	@echo Generating $@...
 	@rm -rf $@
@@ -201,13 +202,13 @@ raw/mcra-clones.all.fastq:
 	cat $^ > $@
 
 meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
-	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "\t" $$0 }' $^ > $@
+	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "." $$7 "\t" $$0 }' $^ > $@
 
 meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
 	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
 
 meta/mcra-clones.suspect.list: meta/mcra-clones.annot.tsv
-	awk '$$8 == "True" {print $$1}' $^ > $@
+	awk '$$9 == "True" {print $$1}' $^ > $@
 
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
                        bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
