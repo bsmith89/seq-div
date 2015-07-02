@@ -172,9 +172,9 @@ meta/archive-contents.tsv: etc/mcra-clones.meta.tsv
 # Move this recipe into a shell script.
 raw/unarchive.mk: meta/archive-contents.tsv
 	@echo Generating $@...
-	@cat $^ | awk '{printf("raw/%s: raw/%s/%s\n\tcp $$^ $$@\n", $$1, $$2, $$1)}' > $@
+	@cat $^ | awk '{printf("raw/ab1/%s: raw/%s | raw/ab1\n\tcp $$</$${@F} $$@\n", $$1, $$2)}' > $@
 	@for archive in $$(cut -f2 $^ | sort | uniq); do \
-		printf 'raw/%s/%%.ab1 raw/%s/%%.ab1: raw/%s.tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $${@D}/*\n' $$archive $$archive $$archive >> $@ ; \
+        printf 'raw/%s: raw/%s.tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $$@\n' $$archive $$archive >> $@ ; \
 	done
 include ./raw/unarchive.mk
 
@@ -183,22 +183,22 @@ include ./raw/unarchive.mk
 # or is it better to start with hard-coded rules and then switch to them
 # later?
 
-raw/qual raw/seq:
+raw/fastq raw/ab1 raw/qual raw/seq:
 	mkdir -p $@
 
-raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/%.ab1 | raw/qual raw/seq
-	phred $< -qd ${<D}/qual -sd ${<D}/seq -raw $*
+raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/ab1/%.ab1 | raw/qual raw/seq
+	phred $< -qd raw/qual -sd raw/seq -raw $* >/dev/null
 
-raw/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual
+raw/fastq/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual | raw/fastq
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
 include raw/mcra-clones.all.fastq.mk
 # All pre-requisites for raw/mcra-clones.all.fastq
 raw/mcra-clones.all.fastq.mk: meta/mcra-clones.names.tsv
 	@echo Generating $@...
-	@echo > $@
+	@rm -rf $@
 	@for clone in $$(cut -f1 $^); do \
-		printf 'raw/mcra-clones.all.fastq: raw/%s.fastq\n' $$clone >> $@; \
+        printf 'raw/mcra-clones.all.fastq: raw/fastq/%s.fastq\n' $$clone >> $@; \
 	done
 
 raw/mcra-clones.all.fastq:
