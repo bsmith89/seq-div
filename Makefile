@@ -268,6 +268,19 @@ seq/mcra-both.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcr
 seq/mcra-both2.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcra-refs2.luton-ampli.fn
 	cat $^ > $@
 
+
+# 16S Reference alignment/hmm
+raw/Silva.seed_v119.tgz:
+	curl -o $@ http://www.mothur.org/w/images/5/56/Silva.seed_v119.tgz
+
+raw/silva.seed_v119.align: raw/Silva.seed_v119.tgz
+	tar -C ${@D} -xzf $^ ${@F}
+	touch $@
+
+res/rrs.hmm: raw/silva.seed_v119.align
+	hmmbuild --dna --informat afa $@ $^
+
+
 # Remove uniformative sequence {{{2
 # Excise amplicon {{{3
 # Search for primer hits:
@@ -338,20 +351,26 @@ seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
         | muscle -quiet -refine \
         > $@
 
-raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
-	curl -o $@ http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
+seq/rrs-%.afn: res/rrs.hmm seq/rrs-%.fn bin/utils/convert.py
+	hmmalign --dna --informat FASTA $(word 1,$^) $(word 2,$^) \
+        | $(word 3,$^) --in-fmt stockholm \
+        | muscle -quiet -refine \
+        > $@
 
-seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
-	tar -xzf $^ -C ${<D}
-	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
-
-# ribo_sina_db.arb doesn't exist yet, I need to download it from
-# http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
-# but it's about 0.5GB
-# `sina` doesn't work on OSX
-seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
-	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA \
-		-i $(word, 2,$^) -o $@
+# raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
+# 	curl -o $@ http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
+#
+# seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
+# 	tar -xzf $^ -C ${<D}
+# 	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
+#
+# # ribo_sina_db.arb doesn't exist yet, I need to download it from
+# # http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
+# # but it's about 0.5GB
+# # `sina` doesn't work on OSX
+# seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
+# 	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA \
+# 		-i $(word, 2,$^) -o $@
 
 seq/%.afa: seq/%.fa
 	muscle -quiet < $^ > $@
