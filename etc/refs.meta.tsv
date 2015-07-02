@@ -141,11 +141,11 @@ gene_id	genome	gene_product	reduced	suspect
 649738403	Methanothermus_fervidus	rrs	False	False
 650857082	Methanotorris_igneus	rrs	False	False
 2511670740	NaN	rrs	False	False
-2511670771	NaN	rrs	False	False
+2511670771	NaN	rrs	False	True
 2512783275	NaN	rrs	False	False
 2519472748	NaN	rrs	False	False
 2519473093	NaN	rrs	False	False
-2520803900	NaN	rrs	False	False
+2520803900	NaN	rrs	False	True
 2540562045	NaN	rrs	False	False
 2540563196	NaN	rrs	False	False
 2540853594	Methanobrevibacter_sp_AbM4	rrs	False	False
