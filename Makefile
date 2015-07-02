@@ -179,10 +179,6 @@ raw/unarchive.mk: meta/archive-contents.tsv
 include ./raw/unarchive.mk
 
 # Contruct FASTQs {{{2
-# TODO: Should I recommend using %-pattern rules whenever possible?
-# or is it better to start with hard-coded rules and then switch to them
-# later?
-
 raw/fastq raw/ab1 raw/qual raw/seq:
 	mkdir -p $@
 
@@ -214,11 +210,11 @@ meta/mcra-clones.suspect.list: meta/mcra-clones.annot.tsv
 	awk '$$8 == "True" {print $$1}' $^ > $@
 
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
-				  bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
-				  bin/utils/drop_seqs.py meta/mcra-clones.suspect.list
+                       bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
+                       bin/utils/drop_seqs.py meta/mcra-clones.suspect.list
 	cat $(word 1,$^) \
-		| $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
-		| $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
+        | $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
+        | $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
 
 # Reference sequences {{{2
 # Rename reference sequences and remove those which have been a priori deemed
@@ -242,7 +238,7 @@ seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                   raw/mcra.published.fn \
                   bin/utils/drop_seqs.py meta/mcra-refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) > $@
+        | $(word 4,$^) $(word 5,$^) > $@
 
 # Very reduced subset of reference sequences which guide interpretation of
 # my clone libraries.
@@ -253,15 +249,15 @@ seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                    raw/mcra.published.fn \
                    bin/utils/fetch_seqs.py meta/mcra-refs.reduced.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) > $@
+        | $(word 4,$^) $(word 5,$^) > $@
 
 # All 16S references
 # rrs-refs3 is a synonym for rrs-refs
 seq/rrs-refs.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
                  raw/rrs.published.fn \
-                 bin/utils/fetch_seqs.py meta/rrs-refs.list
+                 bin/utils/drop_seqs.py meta/rrs-refs.suspect.list
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
-		| $(word 4,$^) $(word 5,$^) > $@
+        | $(word 4,$^) $(word 5,$^) > $@
 
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
@@ -338,9 +334,9 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 # match the model at all.
 seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
 	hmmalign --amino --informat FASTA $(word 1,$^) $(word 2,$^) \
-		| $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
-		| muscle -quiet -refine \
-		> $@
+        | $(word 3,$^) --in-fmt stockholm --out-fmt fasta \
+        | muscle -quiet -refine \
+        > $@
 
 raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
 	curl -o $@ http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
@@ -400,7 +396,7 @@ MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_
 
 %.html: %.md
 	pandoc -f markdown -t html5 -s --highlight-style pygments \
-		--mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
+        --mathjax=${MATHJAX} --toc --toc-depth=4 --css static/main.css $^ > $@
 
 docs: ${ALL_DOCS_HTML} fig/Makefile.reduced.png
 
@@ -416,9 +412,9 @@ res/Makefile.dot: res/Makefile.complete
 
 res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
 	$(word 1,$^) -d '^raw/' -d '^bin/utils/' -d '^\.' -d '\.git' \
-				 -d '(submodules|venv|python-reqs|init)' \
-				 -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
-				 $(word 2,$^) > $@
+                 -d '(submodules|venv|python-reqs|init)' \
+                 -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
+                 $(word 2,$^) > $@
 
 fig/Makefile.reduced.png: res/Makefile.reduced.dot
 	dot -Tpng -Grankdir=BT -Nshape=plaintext < $^ > $@
@@ -474,15 +470,15 @@ PIP_REQS = requirements.txt ${SUBMODULE_PIP_REQS}
 
 python-reqs: | ${VENV}
 	for req_file in ${PIP_REQS} ; do \
-		pip install --upgrade --no-deps -r $$req_file ; \
-		pip install -r $$req_file ; \
-	done
+        pip install --upgrade --no-deps -r $$req_file ; \
+        pip install -r $$req_file ; \
+    done
 
 data-dirs:
 	mkdir -p ${DATA_DIRS}
 
 .PHONY: .link-readme .confirm-git-mangle \
-		.git-mangle .ipynb-filter-config
+        .git-mangle .ipynb-filter-config
 .link-readme:
 	unlink README.md
 	ln -s NOTE.md README.md
