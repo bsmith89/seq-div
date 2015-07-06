@@ -275,7 +275,7 @@ res/rrs.hmm: raw/silva.seed_v119.align
 	hmmbuild --dna --informat afa $@ $^
 
 
-# Combine clones with references {{{3
+# Combine clones with references {{{2
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
@@ -316,22 +316,23 @@ seq/%.luton-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
 seq/%.f3r4-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
 	$(word 1,$^) --primer-set f3r4 --max-mismatch 1 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
 
+# f3r4 amplicon {{{4
 # Based on the reference alignment, there are no gaps in this region,
-# so the amplicon should be already aligned, assuming it's the right length
+# so the amplicon should be already aligned, assuming it's the right length.
+
+# This recipe is appropriate for references, and it takes *.fn input
+# reflecting the lack of consideration for quality issues.
 seq/%.f3r4-ampli.afn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn bin/drop_missized.py
 	$(word 1,$^) --primer-set f3r4 --max-mismatch 1 --trim-primers --drop $(word 2,$^) $(word 3,$^) \
         | $(word 4,$^) \
         > $@
 
-seq/%.f3r4-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
-	$(word 1,$^) --primer-set f3r4 --max-mismatch 0 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
-
-# Based on the reference alignment, there are no gaps in this region,
-# so the amplicon should be already aligned
-seq/%.f3r4-ampli.qfilt.afn: ./bin/qtrim_reads.py seq/%.f3r4-ampli.fastq bin/drop_missized.py
-	$(word 1,$^) --just-filter $(word 2,$^) \
-        | $(word 3,$^) \
-        > $@
+# This recipe also quality filters the sequences, and is more appropriate for
+# clones.  This is reflected in the fact that it takes FASTQ's.
+seq/%.f3r4-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq bin/qtrim_reads.py
+	$(word 1,$^) --primer-set f3r4 --max-mismatch 0 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@ \
+        | $(word 4,$^) --just filter \
+		> $@
 
 # Quality trim {{{3
 seq/%.qtrim.fn: bin/qtrim_reads.py seq/%.fastq
