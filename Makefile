@@ -139,7 +139,7 @@ CLEANUP += raw/unarchive.mk raw/mcra-clones.all.fastq.mk  # Remove sub-makefiles
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
-DATA_DIRS += seq/ tre/
+DATA_DIRS += seq/ tre/ raw/ab1
 
 # ==============
 #  Data {{{1
@@ -180,18 +180,15 @@ raw/unarchive.mk: etc/mcra-clones.meta.tsv
 include ./raw/unarchive.mk
 
 # Contruct FASTQs {{{2
-raw/fastq raw/ab1 raw/qual raw/seq:
-	mkdir -p $@
+raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual: raw/ab1/%.ab1
+	phred $< -qd raw/ab1 -sd raw/ab1 -raw $* >/dev/null
 
-raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/ab1/%.ab1 | raw/qual raw/seq
-	phred $< -qd raw/qual -sd raw/seq -raw $* >/dev/null
-
-raw/fastq/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual | raw/fastq
+raw/ab1/%.fastq: bin/make_fastq.py raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
 # All pre-requisites for raw/mcra-clones.all.fastq
 raw/mcra-clones.all.fastq.mk: etc/mcra-clones.meta.tsv
-	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/fastq/" $$1 ".fastq"}' $^ > $@
+	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/ab1/" $$1 ".fastq"}' $^ > $@
 include raw/mcra-clones.all.fastq.mk
 
 # And now the actual recipe
