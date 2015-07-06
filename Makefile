@@ -112,10 +112,7 @@ include local.mk
 docs:
 figs:
 res: tre/luton-both2.luton-ampli.qtrim.gb.nucl.nwk \
-     tre/luton-both2.luton-ampli.qtrim.gb.prot.nwk \
-     tre/mcra-refs.gb.prot.nwk \
-     tre/rrs-refs.gb.nucl.nwk
-
+     tre/f3r4-both2.f3r4-ampli.nucl.nwk
 # What files are generated on `make all`?
 all: docs figs res
 
@@ -285,7 +282,10 @@ seq/luton-both.%-ampli.qtrim.fn: seq/luton-clones.%-ampli.qtrim.fn seq/mcra-refs
 seq/luton-both2.%-ampli.qtrim.fn: seq/luton-clones.%-ampli.qtrim.fn seq/mcra-refs2.%-ampli.fn
 	cat $^ > $@
 
-seq/luton-both2.f3r4-ampli.qfilt.afn: seq/luton-clones.f3r4-ampli.qfilt.afn seq/mcra-refs2.f3r4-ampli.afn
+seq/f3r4-both.%-ampli.afn: seq/f3r4-clones.%-ampli.afn seq/mcra-refs.%-ampli.afn
+	cat $^ > $@
+
+seq/f3r4-both2.%-ampli.afn: seq/f3r4-clones.%-ampli.afn seq/mcra-refs2.%-ampli.afn
 	cat $^ > $@
 
 # Remove uniformative sequence {{{2

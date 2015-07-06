@@ -567,6 +567,8 @@ more that can be said.
 
 ![Phylogenetic tree of all clones, and references.](static/2015-06-16.clone_diversity.png)
 
+### Comparing Results Between Amplicons ###
+
 (date: 2015-07-01)
 
 Working with the small sequence fragment between mcrA_F3.1 and mcrA_R4.1,
@@ -606,8 +608,30 @@ Why are other positions also variable, though?
 Low quality would be the obvious answer, but I'm already culling low-quality
 sequences...?
 
+(date: 2015-07-06)
 
+I've gotten the f3r4 clones back, and now I can compare the results to the
+luton amplicon.
+Here is the luton tree, with the overlapping subjects highlighted:
 
+![](static/2015-07-06_tree-luton.png)
+
+And here are the same subjects highlighted (in similar colors) on
+a f3r4 tree:
+
+![](static/2015-07-06_tree-f3r4.png)
+
+Notice that Methanosphaera is easily differentiable from _M. smithii_ clones and
+the other reference species.
+U034 demonstrates the same combination of _M. smithii_ and _M. stadtmanae_
+found with the luton primers.
+Also notice that the 'other' _M. smithii_ strain (which was only found in
+U013 with the luton primers) is differentiable from
+the more common strain in these subjects (e.g. U001).
+For this amplicon, however, that difference between _M. smithii_ strains only
+amounts to a _single_ position; it's SNP typing, really.
+We get one sequence (out of twelve) from that individual of the more common
+strain.
 
 # Appendices #
 ## Data Sources ##
