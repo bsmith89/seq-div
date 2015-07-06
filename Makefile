@@ -208,7 +208,7 @@ meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
 	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
 meta/mcra-clones.list: meta/mcra-clones.annot.tsv
-	awk 'NR > 1 && $$9 != "True" {print $$1}' $^ > $@
+	awk 'NR > 1 && $$9 != "True" && $$5 == "luton" {print $$1}' $^ > $@
 # Include only the clones which were amplified with a particular set of primers
 # and which are not suspect.
 
