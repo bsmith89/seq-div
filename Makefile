@@ -207,15 +207,15 @@ meta/clones.annot.tsv: etc/clones.meta.tsv
 meta/clones.names.tsv: meta/clones.annot.tsv
 	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
-meta/luton-clones.list: meta/clones.annot.tsv
-	awk 'NR > 1 && $$9 != "True" && $$5 == "luton" {print $$1}' $^ > $@
+meta/%-clones.list: meta/clones.annot.tsv
+	awk 'NR > 1 && $$9 != "True" && $$5 == "$*" {print $$1}' $^ > $@
 # Include only the clones which were amplified with a particular set of primers
 # and which are not suspect.
 
 # Produce a curated set of clones {{{2
-seq/luton-clones.fastq: raw/clones.all.fastq \
+seq/%-clones.fastq: raw/clones.all.fastq \
                              bin/utils/rename_seqs.py meta/clones.names.tsv \
-                             bin/utils/fetch_seqs.py meta/luton-clones.list
+                             bin/utils/fetch_seqs.py meta/%-clones.list
 	cat $(word 1,$^) \
         | $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
         | $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
