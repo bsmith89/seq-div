@@ -260,12 +260,14 @@ seq/rrs-refs.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
-seq/mcra-both.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcra-refs.luton-ampli.fn
+seq/mcra-both.%-ampli.qtrim.fn: seq/mcra-clones.%-ampli.qtrim.fn seq/mcra-refs.%-ampli.fn
 	cat $^ > $@
 
-seq/mcra-both2.luton-ampli.qtrim.fn: seq/mcra-clones.luton-ampli.qtrim.fn seq/mcra-refs2.luton-ampli.fn
+seq/mcra-both2.%-ampli.qtrim.fn: seq/mcra-clones.%-ampli.qtrim.fn seq/mcra-refs2.%-ampli.fn
 	cat $^ > $@
 
+seq/mcra-both2.f3r4-ampli.qfilt.afn: seq/mcra-clones.f3r4-ampli.qfilt.afn seq/mcra-refs2.f3r4-ampli.afn
+	cat $^ > $@
 
 # 16S Reference alignment/hmm
 raw/Silva.seed_v119.tgz:
@@ -282,15 +284,16 @@ res/rrs.hmm: raw/silva.seed_v119.align
 # Remove uniformative sequence {{{2
 # Excise amplicon {{{3
 # Search for primer hits:
-res/%.psearch.out: seq/%.fn etc/primers.tsv
-	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 50 -outfile $@
-# I use 40% mismatchpercent so that I can include many hits before
+res/%.psearch.out: seq/%.fastq etc/primers.tsv
+	primersearch -seqall $(word 1,$^) -sformat fastq -infile $(word 2,$^) -mismatchpercent 30 -outfile $@
+# I use 30% mismatchpercent so that I can include many hits before
 # narrowing by other criteria.
 
-res/%.psearch.out: seq/%.fastq etc/primers.tsv
-	primersearch -seqall $(word 1,$^) -sformat fastq -infile $(word 2,$^) -mismatchpercent 50 -outfile $@
-# I use 40% mismatchpercent so that I can include many hits before
-# narrowing by other criteria.
+res/%.psearch.out: seq/%.fn etc/primers.tsv
+	primersearch -seqall $(word 1,$^) -infile $(word 2,$^) -mismatchpercent 20 -outfile $@
+# I use 20% mismatchpercent since quality isn't a concern coming from
+# as FASTA (not FASTQ) file.
+
 
 res/%.psearch.tsv: bin/parse_psearch.py etc/primers.tsv res/%.psearch.out
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
@@ -305,19 +308,36 @@ seq/%.luton-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
 seq/%.luton-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
 	$(word 1,$^) --primer-set luton --max-mismatch 5 --trim-primers --drop $(word 2,$^) $(word 3,$^) > $@
 
-# Primers untrimmed for these (for now? TODO)
-seq/%.f3r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-	$(word 1,$^) --primer-set f3r4 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+seq/%.f3r4-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
+	$(word 1,$^) --primer-set f3r4 --max-mismatch 1 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
 
-seq/%.f1r3-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-	$(word 1,$^) --primer-set f1r3 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+# Based on the reference alignment, there are no gaps in this region,
+# so the amplicon should be already aligned, assuming it's the right length
+seq/%.f3r4-ampli.afn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn bin/drop_missized.py
+	$(word 1,$^) --primer-set f3r4 --max-mismatch 1 --trim-primers --drop $(word 2,$^) $(word 3,$^) \
+        | $(word 4,$^) \
+        > $@
 
-seq/%.f1r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-	$(word 1,$^) --primer-set f1r4 --max-mismatch 9 --drop $(word 2,$^) $(word 3,$^) > $@
+seq/%.f3r4-ampli.fastq: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fastq
+	$(word 1,$^) --primer-set f3r4 --max-mismatch 0 --trim-primers --drop -f fastq -t fastq $(word 2,$^) $(word 3,$^) > $@
+
+# Based on the reference alignment, there are no gaps in this region,
+# so the amplicon should be already aligned
+seq/%.f3r4-ampli.qfilt.afn: ./bin/qtrim_reads.py seq/%.f3r4-ampli.fastq bin/drop_missized.py
+	$(word 1,$^) --just-filter $(word 2,$^) \
+        | $(word 3,$^) \
+        > $@
+
+
+# seq/%.f1r3-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+# 	$(word 1,$^) --primer-set f1r3 --max-mismatch 1 --drop $(word 2,$^) $(word 3,$^) > $@
+#
+# seq/%.f1r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
+# 	$(word 1,$^) --primer-set f1r4 --max-mismatch 1 --drop $(word 2,$^) $(word 3,$^) > $@
 
 # Quality trim {{{3
-seq/%.qtrim.fastq: bin/qtrim_reads.py seq/%.fastq
-	$^ --drop -t fastq > $@
+seq/%.qtrim.fn: bin/qtrim_reads.py seq/%.fastq
+	$^ --drop > $@
 
 # Convert filetypes {{{2
 seq/%.fn: bin/utils/convert.py seq/%.fastq

@@ -10,6 +10,7 @@ from utils.lib import cli
 import argparse
 import logging
 from warnings import warn
+from copy import deepcopy
 
 DEFAULT_QUAL_THRESH = 40
 DEFAULT_MIN_LEN = 9
@@ -17,13 +18,21 @@ DEFAULT_MIN_LEN = 9
 logger = logging.getLogger(__name__)
 logging.captureWarnings(True)
 
-def quality_trim(rec, thr):
+def quality_trim(rec, thr, just_filter=False, keep_columns=False):
+    if keep_columns:
+        raise NotImplementedError("This feature is not yet implemented.")
+
+    rec = deepcopy(rec)
     if len(rec.seq) == 0:
         return rec
 
     start = 0
     stop = len(rec)
     quality = rec.letter_annotations['phred_quality']
+    if just_filter and min(quality) < thr:
+        stop = 0  # Trim the whole thing.
+
+
     while (quality[stop - 1] < thr) and (stop > 0):
         stop -= 1
     while (quality[start] < thr) and (stop - start > 0):
@@ -47,6 +56,14 @@ def _get_quality_args_parser():
                    help=("minimum length sequence; "
                          "makes noise only unless --drop "
                          "DEFAULT: {}").format(DEFAULT_MIN_LEN))
+    g.add_argument('--keep-columns', action='store_true',
+                   help=("replace trimmed nucleotides with '-'; "
+                         "this makes sense if the reads are already aligned, "
+                         "because they have been trimmed based on primers, "
+                         "and no InDels are expected within the amplicon."))
+    g.add_argument('--just-filter', action='store_true',
+                   help=("drop sequences with mean quality less than "
+                         "QUALITY_THRESHOLD, do not attempt to trim."))
     return p
 
 def _get_fastq_in_parser():
@@ -76,7 +93,8 @@ def main():
 
     for rec_in in parse(args.in_handle, 'fastq'):
         logger.debug(rec_in)
-        rec_out = quality_trim(rec_in, args.quality_threshold)
+        rec_out = quality_trim(rec_in, args.quality_threshold,
+                               keep_columns=args.keep_columns)
         length = len(rec_out.seq)
         if length < args.min_length:
             warn(("Length of sequence {} less than threshold. "

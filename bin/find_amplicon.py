@@ -80,6 +80,7 @@ def parse_args(argv):
     return args
 
 def get_amplicon(rec, hits, trim_primers=False):
+    logger.debug("Working on {}".format(rec))
     out_rec = copy(rec)
     try:
         hit_info = get_hit_info(rec.id, hits)

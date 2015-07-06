@@ -567,6 +567,47 @@ more that can be said.
 
 ![Phylogenetic tree of all clones, and references.](static/2015-06-16.clone_diversity.png)
 
+(date: 2015-07-01)
+
+Working with the small sequence fragment between mcrA_F3.1 and mcrA_R4.1,
+which I will denote f3r4, is difficult, because it doesn't align well to the
+HMM.
+Since there shouldn't be any InDels in this region, though, I can just skip
+the alignment step...as long as trimming is done correctly.
+
+Based on the fact that the primer-trimmed f3r4 amplicon from the luton
+clones have lots of heterogeneity at the downstream end, I'm going to guess,
+as I have in the past, that this primer overlaps with my R4.1.
+
+This turns out to be the case.
+
+```
+R4.1:     ccctggtgaccgacgttcatNgcRta
+Luton_r:                 ttcattgcRtagttWggRtagtt
+```
+
+Interesting how that turns out to overlap perfectly through the "core" region
+of my CODEHOP primers.
+And it looks like the luton primers _are_ what's causing the heterogeneity,
+since the far 3' end of the Luton reverse primer extends 12 positions
+past my 3' end.
+The initial PCR amplification would have included heterogeneity in these
+primers in the sequence.
+I would have expected the 4th and 7th positions,
+counting from the first un-trimmed position on the downstream end,
+to be the only variable ones, since the Luton
+primers have and W and an R in those position, respectively.
+What I find, instead, is that MOST of the positions are variable,
+although 4 and 7 are the most pronounced.
+A/T in the 4th position and C/T in the 7th.
+This matches the complements of W and R ("weak" and "purine"), that we would
+expect.
+Why are other positions also variable, though?
+Low quality would be the obvious answer, but I'm already culling low-quality
+sequences...?
+
+
+
 
 # Appendices #
 ## Data Sources ##
