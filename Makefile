@@ -95,7 +95,7 @@ export VIRTUAL_ENV = $(abspath ${VENV})
 export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 
 # TODO: Include a tmp/ dir?  Use it for what?
-DATA_DIRS = etc/ ipynb/ raw/ meta/ res/ fig/
+DATA_DIRS += etc/ ipynb/ raw/ meta/ res/ fig/
 
 # Use this file to include sensitive data that shouldn't be version controlled.
 # Others forking this project will need to create their own local.mk.
@@ -322,13 +322,6 @@ seq/%.f3r4-ampli.qfilt.afn: ./bin/qtrim_reads.py seq/%.f3r4-ampli.fastq bin/drop
         | $(word 3,$^) \
         > $@
 
-
-# seq/%.f1r3-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-# 	$(word 1,$^) --primer-set f1r3 --max-mismatch 1 --drop $(word 2,$^) $(word 3,$^) > $@
-#
-# seq/%.f1r4-ampli.fn: ./bin/find_amplicon.py res/%.psearch.tsv seq/%.fn
-# 	$(word 1,$^) --primer-set f1r4 --max-mismatch 1 --drop $(word 2,$^) $(word 3,$^) > $@
-
 # Quality trim {{{3
 seq/%.qtrim.fn: bin/qtrim_reads.py seq/%.fastq
 	$^ --drop > $@
@@ -424,7 +417,7 @@ res/Makefile.dot: res/Makefile.complete
 	make_grapher.py -T $^ -o $@ >/dev/null
 
 res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
-	$(word 1,$^) -d '^raw/' -d '^bin/utils/' -d '^\.' -d '\.git' \
+	$(word 1,$^) -d '^raw/ab1' -d '^bin/utils/' -d '^\.' -d '\.git' \
                  -d '(submodules|venv|python-reqs|init)' \
                  -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
                  $(word 2,$^) > $@
