@@ -167,7 +167,7 @@ raw/mcra.published.fn:
 
 # Unpacking and copying {{{3
 # Automatically generate mapping between .ab1 sequences and their archive.
-raw/ab1.mk: etc/mcra-clones.meta.tsv
+raw/ab1.mk: etc/clones.meta.tsv
 	awk 'NR > 1 {print "raw/ab1/" $$1 ".ab1: raw/" $$9}' < $^ > $@
 include raw/ab1.mk
 
@@ -178,7 +178,7 @@ raw/ab1/%.ab1:
 	cp $</${@F} $@
 
 # Automatically generate rules for unpacking archived data files.
-raw/unarchive.mk: etc/mcra-clones.meta.tsv
+raw/unarchive.mk: etc/clones.meta.tsv
 	awk 'NR > 1 && !seen[$$9]++ {print "raw/" $$9 ": raw/" $$9 ".tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $$@"}' < $^ > $@
 include ./raw/unarchive.mk
 
@@ -191,30 +191,30 @@ raw/ab1/%.fastq: bin/make_fastq.py raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
 # Concatenate clone FASTQ's {{{3
-# All pre-requisites for raw/mcra-clones.all.fastq
-raw/all.fastq.mk: etc/mcra-clones.meta.tsv
-	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/ab1/" $$1 ".fastq"}' $^ > $@
-include raw/all.fastq.mk
+# All pre-requisites for raw/clones.all.fastq
+raw/clones.all.fastq.mk: etc/clones.meta.tsv
+	awk 'NR>1 {print "raw/clones.all.fastq: raw/ab1/" $$1 ".fastq"}' $^ > $@
+include raw/clones.all.fastq.mk
 
 # And now the actual recipe
-raw/mcra-clones.all.fastq:
+raw/clones.all.fastq:
 	cat $^ > $@
 
 # Process clone metadata {{{2
-meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
+meta/clones.annot.tsv: etc/clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "." $$7 "\t" $$0 }' $^ > $@
 
-meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
+meta/clones.names.tsv: meta/clones.annot.tsv
 	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
-meta/mcra-clones.list: meta/mcra-clones.annot.tsv
+meta/mcra-clones.list: meta/clones.annot.tsv
 	awk 'NR > 1 && $$9 != "True" && $$5 == "luton" {print $$1}' $^ > $@
 # Include only the clones which were amplified with a particular set of primers
 # and which are not suspect.
 
 # Produce a curated set of clones {{{2
-seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
-                             bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
+seq/mcra-clones.fastq: raw/clones.all.fastq \
+                             bin/utils/rename_seqs.py meta/clones.names.tsv \
                              bin/utils/fetch_seqs.py meta/mcra-clones.list
 	cat $(word 1,$^) \
         | $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
