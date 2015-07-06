@@ -201,12 +201,14 @@ meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
 	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
-meta/mcra-clones.suspect.list: meta/mcra-clones.annot.tsv
-	awk '$$9 == "True" {print $$1}' $^ > $@
+meta/mcra-clones.list: meta/mcra-clones.annot.tsv
+	awk 'NR > 1 && $$9 != "True" {print $$1}' $^ > $@
+# Include only the clones which were amplified with a particular set of primers
+# and which are not suspect.
 
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
-                       bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
-                       bin/utils/drop_seqs.py meta/mcra-clones.suspect.list
+                             bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
+                             bin/utils/fetch_seqs.py meta/mcra-clones.list
 	cat $(word 1,$^) \
         | $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
         | $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
