@@ -135,7 +135,7 @@ export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 
 # Use the following line to add files and directories to be deleted on `make clean`:
 CLEANUP += res/* seq/* tre/* meta/*  # Remove intermediate results
-CLEANUP += raw/unarchive.mk raw/mcra-clones.all.fastq.mk  # Remove sub-makefiles
+CLEANUP += raw/unarchive.mk raw/all.fastq.mk  # Remove sub-makefiles
 
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
@@ -187,9 +187,9 @@ raw/ab1/%.fastq: bin/make_fastq.py raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
 # All pre-requisites for raw/mcra-clones.all.fastq
-raw/mcra-clones.all.fastq.mk: etc/mcra-clones.meta.tsv
+raw/all.fastq.mk: etc/mcra-clones.meta.tsv
 	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/ab1/" $$1 ".fastq"}' $^ > $@
-include raw/mcra-clones.all.fastq.mk
+include raw/all.fastq.mk
 
 # And now the actual recipe
 raw/mcra-clones.all.fastq:
