@@ -170,7 +170,7 @@ include raw/ab1.mk
 
 # And now the actual recipe
 # TODO: Since we only take the first pre-requisite as the file source,
-# bugs in which multiple preqs are set may be difficult to debug.
+# problems in which multiple preqs are set may be difficult to debug.
 raw/ab1/%.ab1:
 	cp $</${@F} $@
 
@@ -199,7 +199,7 @@ meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "." $$7 "\t" $$0 }' $^ > $@
 
 meta/mcra-clones.names.tsv: meta/mcra-clones.annot.tsv
-	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
+	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
 meta/mcra-clones.suspect.list: meta/mcra-clones.annot.tsv
 	awk '$$9 == "True" {print $$1}' $^ > $@
@@ -217,10 +217,10 @@ seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
 
 # TODO: Why can't I import these annotations into FigTree?
 meta/%-refs.annot.tsv: etc/refs.meta.tsv
-	awk '$$3 == "$*" || NR == 1 {print $$2"."$$1"\t"$$0}' $^ > $@
+	awk '$$3 == "$*" || NR == 1 {print $$2 "." $$1 "\t" $$0}' $^ > $@
 
 meta/%-refs.names.tsv: meta/%-refs.annot.tsv
-	awk 'NR > 1 {print $$2"\t"$$1}' $^ > $@
+	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
 meta/%-refs.suspect.list: meta/%-refs.annot.tsv
 	awk '$$4 == "$*" && $$6 == "True" {print $$1}' $^ > $@
@@ -235,7 +235,7 @@ seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
 # Very reduced subset of reference sequences which guide interpretation of
 # my clone libraries.
 meta/%-refs.reduced.list: meta/%-refs.annot.tsv
-	awk '$$4 == "$*" && $$5 == "True"' $^ | cut -f1 > $@
+	awk '$$4 == "$*" && $$5 == "True" {print $$1}' $^ > $@
 
 seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                    raw/mcra.published.fn \
@@ -288,10 +288,8 @@ res/%.psearch.out: seq/%.fn etc/primers.tsv
 # I use 20% mismatchpercent since quality isn't a concern coming from
 # as FASTA (not FASTQ) file.
 
-
 res/%.psearch.tsv: bin/parse_psearch.py etc/primers.tsv res/%.psearch.out
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
-
 
 # Re-orient the sequences to match the forward-reverse in etc/*.primers
 # and trim to within the primers
