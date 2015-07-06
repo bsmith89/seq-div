@@ -354,7 +354,6 @@ seq/%.fa: bin/utils/translate.py seq/%.frame.fn
 # Basically anything that *could* go into the paper as a table.
 
 # Align {{{2
-
 # refinement can't handle hmmalign output where the sequence just doesn't
 # match the model at all.
 seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
@@ -363,26 +362,12 @@ seq/mcra-%.afa: etc/mcra.fungene.hmm seq/mcra-%.fa bin/utils/convert.py
         | muscle -quiet -refine \
         > $@
 
+# TODO: Compare this to SINA
 seq/rrs-%.afn: res/rrs.hmm seq/rrs-%.fn bin/utils/convert.py
 	hmmalign --dna --informat FASTA $(word 1,$^) $(word 2,$^) \
         | $(word 3,$^) --in-fmt stockholm \
         | muscle -quiet -refine \
         > $@
-
-# raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz:
-# 	curl -o $@ http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
-#
-# seq/rrs.silva.arb: raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb.tgz
-# 	tar -xzf $^ -C ${<D}
-# 	cp raw/SSURef_NR99_119_SILVA_14_07_14_opt.arb $@
-#
-# # ribo_sina_db.arb doesn't exist yet, I need to download it from
-# # http://www.arb-silva.de/fileadmin/silva_databases/release_119/ARB_files/SSURef_NR99_119_SILVA_14_07_14_opt.arb
-# # but it's about 0.5GB
-# # `sina` doesn't work on OSX
-# seq/rrs-%.afn: seq/rrs-%.fn seq/rrs.silva.arb
-# 	sina --ptdb $(word 2,$^) --intype=FASTA --outtype=FASTA \
-# 		-i $(word, 2,$^) -o $@
 
 seq/%.afa: seq/%.fa
 	muscle -quiet < $^ > $@
