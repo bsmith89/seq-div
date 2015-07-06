@@ -107,7 +107,7 @@ include local.mk
 #  User Configuration {{{1
 # ====================
 
-# Add sub-targets (prerequisites) to the major phony targets.
+# Major targets {{{2
 .PHONY: docs figs res
 docs:
 figs:
@@ -119,6 +119,7 @@ res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
 # What files are generated on `make all`?
 all: docs figs res
 
+# Compute environment {{{2
 # Name, and directory, of the python virtual environment:
 VENV = ./venv
 # All recipes are run as though they are within the virtualenv.
@@ -133,10 +134,12 @@ export VIRTUAL_ENV = $(abspath ${VENV})
 export PATH := ${VIRTUAL_ENV}/bin:${PATH}
 # TODO: Deal with virtualenvs in a more transparent way.
 
+# Cleanup settings {{{2
 # Use the following line to add files and directories to be deleted on `make clean`:
 CLEANUP += res/* seq/* tre/* meta/*  # Remove intermediate results
 CLEANUP += raw/unarchive.mk raw/all.fastq.mk  # Remove sub-makefiles
 
+# Initialization settings {{{2
 # What directories to generate on `make data-dirs`.
 # By default, already includes etc/ ipynb/ raw/ meta/ res/ fig/
 DATA_DIRS += seq/ tre/ raw/ab1
@@ -180,12 +183,14 @@ raw/unarchive.mk: etc/mcra-clones.meta.tsv
 include ./raw/unarchive.mk
 
 # Contruct FASTQs {{{2
+# Process ab1's {{{3
 raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual: raw/ab1/%.ab1
 	phred $< -qd raw/ab1 -sd raw/ab1 -raw $* >/dev/null
 
 raw/ab1/%.fastq: bin/make_fastq.py raw/ab1/%.ab1.seq raw/ab1/%.ab1.qual
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
+# Concatenate clone FASTQ's {{{3
 # All pre-requisites for raw/mcra-clones.all.fastq
 raw/all.fastq.mk: etc/mcra-clones.meta.tsv
 	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/ab1/" $$1 ".fastq"}' $^ > $@
@@ -195,6 +200,7 @@ include raw/all.fastq.mk
 raw/mcra-clones.all.fastq:
 	cat $^ > $@
 
+# Process clone metadata {{{2
 meta/mcra-clones.annot.tsv: etc/mcra-clones.meta.tsv
 	awk '{print $$2 "." $$3 "." $$4 "." $$5 "." $$6 "." $$7 "\t" $$0 }' $^ > $@
 
@@ -206,6 +212,7 @@ meta/mcra-clones.list: meta/mcra-clones.annot.tsv
 # Include only the clones which were amplified with a particular set of primers
 # and which are not suspect.
 
+# Produce a curated set of clones {{{2
 seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
                              bin/utils/rename_seqs.py meta/mcra-clones.names.tsv \
                              bin/utils/fetch_seqs.py meta/mcra-clones.list
@@ -217,6 +224,7 @@ seq/mcra-clones.fastq: raw/mcra-clones.all.fastq \
 # Rename reference sequences and remove those which have been a priori deemed
 # suspicious.
 
+# Process ref metadata {{{3
 # TODO: Why can't I import these annotations into FigTree?
 meta/%-refs.annot.tsv: etc/refs.meta.tsv
 	awk '$$3 == "$*" || NR == 1 {print $$2 "." $$1 "\t" $$0}' $^ > $@
@@ -227,6 +235,7 @@ meta/%-refs.names.tsv: meta/%-refs.annot.tsv
 meta/%-refs.suspect.list: meta/%-refs.annot.tsv
 	awk '$$4 == "$*" && $$6 == "True" {print $$1}' $^ > $@
 
+# Make curated mcrA reference sets {{{3
 # De-redundant-ed references (mcra-refs.names.tsv isn't exhaustive).
 seq/mcra-refs.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
                   raw/mcra.published.fn \
@@ -245,7 +254,7 @@ seq/mcra-refs2.fn: bin/utils/rename_seqs.py meta/mcra-refs.names.tsv \
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
         | $(word 4,$^) $(word 5,$^) > $@
 
-# All 16S references
+# Curated 16S references {{{3
 # rrs-refs3 is a synonym for rrs-refs
 seq/rrs-refs.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
                  raw/rrs.published.fn \
@@ -253,6 +262,20 @@ seq/rrs-refs.fn: bin/utils/rename_seqs.py meta/rrs-refs.names.tsv \
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) \
         | $(word 4,$^) $(word 5,$^) > $@
 
+
+# 16S Reference alignment/hmm {{{3
+raw/Silva.seed_v119.tgz:
+	curl -o $@ http://www.mothur.org/w/images/5/56/Silva.seed_v119.tgz
+
+raw/silva.seed_v119.align: raw/Silva.seed_v119.tgz
+	tar -C ${@D} -xzf $^ ${@F}
+	touch $@
+
+res/rrs.hmm: raw/silva.seed_v119.align
+	hmmbuild --dna --informat afa $@ $^
+
+
+# Combine clones with references {{{3
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
@@ -264,18 +287,6 @@ seq/mcra-both2.%-ampli.qtrim.fn: seq/mcra-clones.%-ampli.qtrim.fn seq/mcra-refs2
 
 seq/mcra-both2.f3r4-ampli.qfilt.afn: seq/mcra-clones.f3r4-ampli.qfilt.afn seq/mcra-refs2.f3r4-ampli.afn
 	cat $^ > $@
-
-# 16S Reference alignment/hmm
-raw/Silva.seed_v119.tgz:
-	curl -o $@ http://www.mothur.org/w/images/5/56/Silva.seed_v119.tgz
-
-raw/silva.seed_v119.align: raw/Silva.seed_v119.tgz
-	tar -C ${@D} -xzf $^ ${@F}
-	touch $@
-
-res/rrs.hmm: raw/silva.seed_v119.align
-	hmmbuild --dna --informat afa $@ $^
-
 
 # Remove uniformative sequence {{{2
 # Excise amplicon {{{3
