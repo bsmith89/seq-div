@@ -164,18 +164,20 @@ raw/mcra.published.fn:
 	${GET_FROM_DROPBOX}
 
 # Unpacking and copying {{{3
+# Automatically generate mapping between .ab1 sequences and their archive.
+raw/ab1.mk: etc/mcra-clones.meta.tsv
+	awk 'NR > 1 {print "raw/ab1/" $$1 ".ab1: raw/" $$9}' < $^ > $@
+include raw/ab1.mk
 
-meta/archive-contents.tsv: etc/mcra-clones.meta.tsv
-	awk 'NR > 1 {print $$1 ".ab1\t" $$9}' $^ > $@
+# And now the actual recipe
+# TODO: Since we only take the first pre-requisite as the file source,
+# bugs in which multiple preqs are set may be difficult to debug.
+raw/ab1/%.ab1:
+	cp $</${@F} $@
 
-# Automatically generate unarchive.mk: rules for unpacking archived data files.
-# Move this recipe into a shell script.
-raw/unarchive.mk: meta/archive-contents.tsv
-	@echo Generating $@...
-	@cat $^ | awk '{printf("raw/ab1/%s: raw/%s | raw/ab1\n\tcp $$</$${@F} $$@\n", $$1, $$2)}' > $@
-	@for archive in $$(cut -f2 $^ | sort | uniq); do \
-        printf 'raw/%s: raw/%s.tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $$@\n' $$archive $$archive >> $@ ; \
-	done
+# Automatically generate rules for unpacking archived data files.
+raw/unarchive.mk: etc/mcra-clones.meta.tsv
+	awk 'NR > 1 && !seen[$$9]++ {print "raw/" $$9 ": raw/" $$9 ".tgz\n\ttar -C raw/ -xzf $$^\n\ttouch $$@"}' < $^ > $@
 include ./raw/unarchive.mk
 
 # Contruct FASTQs {{{2
@@ -188,16 +190,12 @@ raw/seq/%.ab1.seq raw/qual/%.ab1.qual: raw/ab1/%.ab1 | raw/qual raw/seq
 raw/fastq/%.fastq: bin/make_fastq.py raw/seq/%.ab1.seq raw/qual/%.ab1.qual | raw/fastq
 	$(word 1,$^) $(word 2,$^) $(word 3,$^) > $@
 
-include raw/mcra-clones.all.fastq.mk
 # All pre-requisites for raw/mcra-clones.all.fastq
-# TODO: Remake this using awk, not shell-loops.
-raw/mcra-clones.all.fastq.mk: meta/mcra-clones.names.tsv
-	@echo Generating $@...
-	@rm -rf $@
-	@for clone in $$(cut -f1 $^); do \
-        printf 'raw/mcra-clones.all.fastq: raw/fastq/%s.fastq\n' $$clone >> $@; \
-	done
+raw/mcra-clones.all.fastq.mk: etc/mcra-clones.meta.tsv
+	awk 'NR>1 {print "raw/mcra-clones.all.fastq: raw/fastq/" $$1 ".fastq"}' $^ > $@
+include raw/mcra-clones.all.fastq.mk
 
+# And now the actual recipe
 raw/mcra-clones.all.fastq:
 	cat $^ > $@
 
