@@ -151,17 +151,16 @@ DATA_DIRS += seq/ tre/
 # Archives {{{2
 # Dropbox downloads {{{3
 
-# List of <dir>.tgz data repos in my Dropbox Public/Data/ directory.
-DROPBOX_REPOS = 2015-04-29_mcrA-clones.tgz 2015-05-13_mcrA-clones.tgz 2015-06-09_mcrA-clones.tgz
-define GET_FROM_DROPBOX
-wget --no-clobber --directory-prefix=${@D} \
+define GET_FROM_MY_DROPBOX
+wget --no-clobber --no-verbose --directory-prefix=${@D} \
 	https://dl.dropboxusercontent.com/u/$${DROPBOX_UID}/Data/${@F}
 endef
-$(addprefix raw/,${DROPBOX_REPOS}):
-	${GET_FROM_DROPBOX}
+# TODO: Can I count on all raw/*.tgz files being in my dropbox?
+raw/%.tgz:
+	${GET_FROM_MY_DROPBOX}
 
 raw/mcra.published.fn:
-	${GET_FROM_DROPBOX}
+	${GET_FROM_MY_DROPBOX}
 
 # Unpacking and copying {{{3
 # Automatically generate mapping between .ab1 sequences and their archive.
