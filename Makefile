@@ -111,8 +111,8 @@ include local.mk
 .PHONY: docs figs res
 docs:
 figs:
-res: tre/mcra-both2.luton-ampli.qtrim.gb.nucl.nwk \
-     tre/mcra-both2.luton-ampli.qtrim.gb.prot.nwk \
+res: tre/luton-both2.luton-ampli.qtrim.gb.nucl.nwk \
+     tre/luton-both2.luton-ampli.qtrim.gb.prot.nwk \
      tre/mcra-refs.gb.prot.nwk \
      tre/rrs-refs.gb.nucl.nwk
 
@@ -207,15 +207,15 @@ meta/clones.annot.tsv: etc/clones.meta.tsv
 meta/clones.names.tsv: meta/clones.annot.tsv
 	awk 'NR > 1 {print $$2 "\t" $$1}' $^ > $@
 
-meta/mcra-clones.list: meta/clones.annot.tsv
+meta/luton-clones.list: meta/clones.annot.tsv
 	awk 'NR > 1 && $$9 != "True" && $$5 == "luton" {print $$1}' $^ > $@
 # Include only the clones which were amplified with a particular set of primers
 # and which are not suspect.
 
 # Produce a curated set of clones {{{2
-seq/mcra-clones.fastq: raw/clones.all.fastq \
+seq/luton-clones.fastq: raw/clones.all.fastq \
                              bin/utils/rename_seqs.py meta/clones.names.tsv \
-                             bin/utils/fetch_seqs.py meta/mcra-clones.list
+                             bin/utils/fetch_seqs.py meta/luton-clones.list
 	cat $(word 1,$^) \
         | $(word 2,$^) -f fastq -t fastq $(word 3,$^) \
         | $(word 4,$^) -f fastq -t fastq $(word 5,$^) > $@
@@ -279,13 +279,13 @@ res/rrs.hmm: raw/silva.seed_v119.align
 # Combine clones which have been quality trimmed with the reference sequences.
 # to make the "both" file series.
 # Quality trimming of the references is not required.
-seq/mcra-both.%-ampli.qtrim.fn: seq/mcra-clones.%-ampli.qtrim.fn seq/mcra-refs.%-ampli.fn
+seq/luton-both.%-ampli.qtrim.fn: seq/luton-clones.%-ampli.qtrim.fn seq/mcra-refs.%-ampli.fn
 	cat $^ > $@
 
-seq/mcra-both2.%-ampli.qtrim.fn: seq/mcra-clones.%-ampli.qtrim.fn seq/mcra-refs2.%-ampli.fn
+seq/luton-both2.%-ampli.qtrim.fn: seq/luton-clones.%-ampli.qtrim.fn seq/mcra-refs2.%-ampli.fn
 	cat $^ > $@
 
-seq/mcra-both2.f3r4-ampli.qfilt.afn: seq/mcra-clones.f3r4-ampli.qfilt.afn seq/mcra-refs2.f3r4-ampli.afn
+seq/luton-both2.f3r4-ampli.qfilt.afn: seq/luton-clones.f3r4-ampli.qfilt.afn seq/mcra-refs2.f3r4-ampli.afn
 	cat $^ > $@
 
 # Remove uniformative sequence {{{2
