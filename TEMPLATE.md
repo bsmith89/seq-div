@@ -246,15 +246,16 @@ _All project code is version controlled._
 
     Scripts for which all of these recommendations are met,
     and where the routine may be useful in other projects,
-    are great candidates for inclusion in the `bin/utils/` submodule.
+    are great candidates for inclusion in the `bin/utils/` ~~submodule~~.
 
     PBS submission scripts should be stored in `bin/pbs`, and those
-    which produce figures, `vin/fig`.
+    which produce figures, `bin/fig`.
 
 `bin/utils/`
 
-:   A [git submodule](http://git-scm.com/book/en/Git-Tools-Submodules)
-    of utility scripts and executables.
+:   ~~A [git submodule](http://git-scm.com/book/en/Git-Tools-Submodules)
+    of utility scripts and executables.~~
+    Now I'm using [git-stree](https://github.com/tdd/git-stree) instead.
 
     Any analysis scripts that can be used by other projects should ultimately
     end up in this [repository](https://github.com/bsmith89/compbio-scripts).
