@@ -29,6 +29,9 @@ def parse_args(argv):
 def matches_any(string, regex_list):
     return any(regex.search(string) for regex in regex_list)
 
+def remove_node(node):
+    """Re-connect sources to sinks."""
+    pass
 
 def main():
     args = parse_args(sys.argv)
@@ -36,14 +39,8 @@ def main():
 
     graph = graph.reverse()
 
-    if args.drop:
-        droppers = [re.compile(pattern) for pattern in args.drop]
-    else:
-        droppers = []
-    if args.keep:
-        keepers = [re.compile(pattern) for pattern in args.keep]
-    else:
-        keepers = []
+    droppers = [re.compile(pattern) for pattern in args.drop]
+    keepers = [re.compile(pattern) for pattern in args.keep]
 
     in_degree = graph.in_degree()
     degree = graph.degree()

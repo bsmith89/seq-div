@@ -408,6 +408,8 @@ tre/%.prot.nwk: seq/%.afa
 # =======================
 #  Documentation {{{1
 # =======================
+# TODO: Consider splitting out all of the constant parts of this file into
+# a new Makefile
 ALL_DOCS = TEMPLATE NOTE
 ALL_DOCS_HTML = $(addsuffix .html,${ALL_DOCS})
 MATHJAX = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
@@ -494,6 +496,9 @@ python-reqs: | ${VENV}
 
 data-dirs:
 	mkdir -p ${DATA_DIRS}
+
+tags:
+	ctags -R
 
 .PHONY: .link-readme .confirm-git-mangle \
         .git-mangle .ipynb-filter-config
