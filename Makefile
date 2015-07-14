@@ -437,7 +437,7 @@ res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
                  $(word 2,$^) > $@
 
 fig/Makefile.reduced.png: res/Makefile.reduced.dot
-	dot -Tpng -Grankdir=BT -Nshape=plaintext < $^ > $@
+	dot -Tpng -Edir=back -Nshape=plaintext < $^ > $@
 
 # =================
 #  Cleanup {{{1
