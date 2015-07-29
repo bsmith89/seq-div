@@ -427,8 +427,8 @@ docs: ${ALL_DOCS_HTML} fig/Makefile.reduced.png
 res/Makefile.complete: Makefile
 	${MAKE} --makefile=$^ -npr > $@
 
-res/Makefile.dot: res/Makefile.complete
-	make_grapher.py -T $^ -o $@ >/dev/null
+res/Makefile.dot: bin/parse_make_db.py res/Makefile.complete
+	$^ > $@
 
 res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
 	$(word 1,$^) -d '^raw/ab1' -d '^bin/utils/' -d '^\.' -d '\.git' \
