@@ -436,8 +436,8 @@ res/Makefile.reduced.dot: bin/clean_makefile_graph.py res/Makefile.dot
                  -k '^raw/mcra' -k '^(all|res|figs|docs|Makefile)$$' \
                  $(word 2,$^) > $@
 
-fig/Makefile.reduced.png: res/Makefile.reduced.dot
-	dot -Tpng -Edir=back -Nshape=plaintext < $^ > $@
+fig/Makefile.reduced.%: res/Makefile.reduced.dot
+	dot -T$* -Edir=back -Nshape=plaintext < $^ > $@
 
 # =================
 #  Cleanup {{{1

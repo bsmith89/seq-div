@@ -4,6 +4,8 @@
 import sys
 from networkx import DiGraph, write_dot
 
+SPECIAL_TRGTS = {".POSIX", ".PHONY"}
+
 
 def recipe_start(line):
     """Determine if a line looks like 'target: prerequisites'."""
@@ -47,14 +49,18 @@ def first_line(recipe):
 def parse_header(header):
     "Split recipe header into target, pre-requisites."
     trgt, rest = header.split(': ')
-    return trgt, rest.split()
+    preqs = [piece
+             for piece in rest.split()
+             if piece not in {"|", ":"}]
+    return trgt, preqs
 
 
 def to_graph(mapping):
     g = DiGraph()
     for trgt in mapping:
-        for preq in mapping[trgt]:
-            g.add_edge(trgt, preq)
+        if trgt not in SPECIAL_TRGTS:
+            for preq in mapping[trgt]:
+                g.add_edge(trgt, preq)
     return g
 
 
